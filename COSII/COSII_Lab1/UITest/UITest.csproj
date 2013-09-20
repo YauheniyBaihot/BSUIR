@@ -52,6 +52,10 @@
       <Project>{162249ef-f2a6-4042-86a0-ffc253743e6f}</Project>
       <Name>BLLEntities</Name>
     </ProjectReference>
+    <ProjectReference Include="..\BLLServices\BLLServices.csproj">
+      <Project>{a266e802-a96c-471f-a7d8-84c1f92416d5}</Project>
+      <Name>BLLServices</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

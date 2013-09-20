@@ -67,6 +67,11 @@ namespace BLLEntities
             _Im = 0;
         }
 
+        public ComplexNumber(double Re)
+        {
+            _Re = Re;
+        }
+
         public ComplexNumber(double Re, double Im)
         {
             _Re = Re;

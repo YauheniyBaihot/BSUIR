@@ -56,29 +56,28 @@ namespace BLLServices
             return new ComplexNumber(ComplexNumber1.Re * ComplexNumber2.Re - ComplexNumber1.Im * ComplexNumber2.Im, ComplexNumber1.Re * ComplexNumber2.Im + ComplexNumber1.Im * ComplexNumber2.Re);
         }
 
-        public static ComplexNumber Pow(ComplexNumber ComplexNumber, int pow)
+        public static ComplexNumber Pow(ComplexNumber ComplexNumber, int Pow)
         {
-            ComplexNumber Result = new ComplexNumber(1, 0);
-            for (int i = 0; i < pow; i++)
+            ComplexNumber Result = new ComplexNumber(1);
+            for (int i = 0; i < Pow; i++)
             {
                 Result = Mul(Result, ComplexNumber);
             }
             return Result;
         }
 
-        public static void Split(ComplexNumber[] array,
-                                  out ComplexNumber[] evenPart,
-                                  out ComplexNumber[] oddPart)
+        public static void Split(List<ComplexNumber> Array, List<ComplexNumber> EvenArray, List<ComplexNumber> OddArray)
         {
-            var n = array.Length;
-            evenPart = new ComplexNumber[n / 2];
-            oddPart = new ComplexNumber[n / 2];
-
-            for (var i = 0; i < n; i += 2)
+            for (int i = 0; i < Array.Count; i++)
             {
-                var index = i / 2;
-                evenPart[index] = array[i];
-                oddPart[index] = array[i + 1];
+                if (i % 2 == 0)
+                {
+                    EvenArray.Add(Array[i]);
+                }
+                else
+                {
+                    OddArray.Add(Array[i]);
+                }
             }
         }
 

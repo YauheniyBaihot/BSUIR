@@ -6,3 +6,5 @@ d:\GitHub\BSUIR\COSII\COSII_Lab1\UITest\bin\Debug\BLLEntities.pdb
 d:\GitHub\BSUIR\COSII\COSII_Lab1\UITest\obj\Debug\UITest.csprojResolveAssemblyReference.cache
 d:\GitHub\BSUIR\COSII\COSII_Lab1\UITest\obj\Debug\UITest.exe
 d:\GitHub\BSUIR\COSII\COSII_Lab1\UITest\obj\Debug\UITest.pdb
+D:\GitHub\BSUIR\COSII\COSII_Lab1\UITest\bin\Debug\BLLServices.dll
+D:\GitHub\BSUIR\COSII\COSII_Lab1\UITest\bin\Debug\BLLServices.pdb
