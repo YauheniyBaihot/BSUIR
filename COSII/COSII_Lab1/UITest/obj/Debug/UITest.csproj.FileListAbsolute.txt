@@ -1,0 +1,8 @@
+d:\GitHub\BSUIR\COSII\COSII_Lab1\UITest\bin\Debug\UITest.exe.config
+d:\GitHub\BSUIR\COSII\COSII_Lab1\UITest\bin\Debug\UITest.exe
+d:\GitHub\BSUIR\COSII\COSII_Lab1\UITest\bin\Debug\UITest.pdb
+d:\GitHub\BSUIR\COSII\COSII_Lab1\UITest\bin\Debug\BLLEntities.dll
+d:\GitHub\BSUIR\COSII\COSII_Lab1\UITest\bin\Debug\BLLEntities.pdb
+d:\GitHub\BSUIR\COSII\COSII_Lab1\UITest\obj\Debug\UITest.csprojResolveAssemblyReference.cache
+d:\GitHub\BSUIR\COSII\COSII_Lab1\UITest\obj\Debug\UITest.exe
+d:\GitHub\BSUIR\COSII\COSII_Lab1\UITest\obj\Debug\UITest.pdb

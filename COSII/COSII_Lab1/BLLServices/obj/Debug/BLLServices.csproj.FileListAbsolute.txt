@@ -1,0 +1,7 @@
+d:\GitHub\BSUIR\COSII\COSII_Lab1\BLLServices\bin\Debug\BLLServices.dll
+d:\GitHub\BSUIR\COSII\COSII_Lab1\BLLServices\bin\Debug\BLLServices.pdb
+d:\GitHub\BSUIR\COSII\COSII_Lab1\BLLServices\bin\Debug\BLLEntities.dll
+d:\GitHub\BSUIR\COSII\COSII_Lab1\BLLServices\bin\Debug\BLLEntities.pdb
+d:\GitHub\BSUIR\COSII\COSII_Lab1\BLLServices\obj\Debug\BLLServices.csprojResolveAssemblyReference.cache
+d:\GitHub\BSUIR\COSII\COSII_Lab1\BLLServices\obj\Debug\BLLServices.dll
+d:\GitHub\BSUIR\COSII\COSII_Lab1\BLLServices\obj\Debug\BLLServices.pdb
