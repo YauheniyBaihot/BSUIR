@@ -1,0 +1,50 @@
+﻿<script type="text/javascript">
+    $(function () {
+        var dataSource = [
+         { year: 1997, cluster: -0.000000000002 },
+         { year: 1999, cluster: -0.0000000000015 },
+         { year: 2001, cluster: -0.0000000000011356342324 },
+         { year: 2003, cluster: 0 },
+         { year: 2005, cluster: 0.000000000001 },
+         { year: 2007, cluster: 0.000000000002 }
+        ];
+
+        $("#chartContainer").dxChart({
+            dataSource: dataSource,
+            commonSeriesSettings: {
+                type: "spline",
+                argumentField: "year"
+            },
+            commonAxisSettings: {
+                grid: {
+                    visible: true
+                }
+            },
+            series: [
+                { valueField: "cluster", name: "Cluster" }
+            ],
+            tooltip: {
+                enabled: true
+            },
+            legend: {
+                verticalAlignment: "bottom",
+                horizontalAlignment: "center"
+            },
+            title: "Architecture Share Over Time (Count)",
+            commonPaneSettings: {
+                border: {
+                    visible: true,
+                    bottom: false
+                }
+            }
+        });
+    });
+</script>
+<div class="content">
+    <div class="pane">
+        <div class="long-title">
+            <h3></h3>
+        </div>
+        <div id="chartContainer" style="width: 100%; height: 440px;"></div>
+    </div>
+</div>

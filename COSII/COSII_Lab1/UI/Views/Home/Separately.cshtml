@@ -1,0 +1,54 @@
+﻿@model UI.Models.Chart
+<script type="text/javascript">
+    $(function () {
+        console.log('a');
+        var X = @Model.X.ToArray();
+        var Y = @Model.Y.ToArray();
+        console.log('a');
+        var dataSource = [ ];
+        console.log('a');
+        for(var i = 0; i < X.length; i++) {
+            dataSource[i].year = X[i];
+            dataSource[i].cluster = Y[i];
+        }
+
+        $("#chartContainer").dxChart({
+            dataSource: dataSource,
+            commonSeriesSettings: {
+                type: "spline",
+                argumentField: "year"
+            },
+            commonAxisSettings: {
+                grid: {
+                    visible: true
+                }
+            },
+            series: [
+                { valueField: "cluster", name: "Cluster" }
+            ],
+            tooltip: {
+                enabled: true
+            },
+            legend: {
+                verticalAlignment: "bottom",
+                horizontalAlignment: "center"
+            },
+            title: "Architecture Share Over Time (Count)",
+            commonPaneSettings: {
+                border: {
+                    visible: true,
+                    bottom: false
+                }
+            }
+        });
+    });
+</script>
+<div class="content">
+    <div class="pane">
+        <div class="long-title">
+            <h3></h3>
+        </div>
+        <div id="chartContainer" style="width: 100%; height: 440px;"></div>
+    </div>
+</div>
+
