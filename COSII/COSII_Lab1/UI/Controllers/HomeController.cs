@@ -36,5 +36,18 @@ namespace UI.Controllers
         {
             return View();
         }
+
+        public JsonResult FindTags()
+        {
+            List<ComplexNumber> lst = new List<ComplexNumber>();
+            List<Double> argumentsLst = new List<Double>();
+            for (int i = 0; i < N; i++)
+            {
+                double argument = i * (Period / N);
+                argumentsLst.Add(argument);
+                lst.Add(new ComplexNumber(Math.Sin(3 * argument) + Math.Cos(argument)));
+            }
+            return Json(new Chart(argumentsLst, lst.Select(x => x.Re)));
+        }
     }
 }

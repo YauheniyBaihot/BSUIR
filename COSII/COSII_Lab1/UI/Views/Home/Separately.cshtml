@@ -1,17 +1,10 @@
 ﻿@model UI.Models.Chart
 <script type="text/javascript">
-    $(function () {
-        console.log('a');
-        var X = @Model.X.ToArray();
-        var Y = @Model.Y.ToArray();
-        console.log('a');
-        var dataSource = [ ];
-        console.log('a');
-        for(var i = 0; i < X.length; i++) {
-            dataSource[i].year = X[i];
-            dataSource[i].cluster = Y[i];
+    function X(data) {
+        var dataSource = [];
+        for (var i = 0; i < data.X.length; i++) {
+            dataSource.push({ year: data.X[i], cluster: data.Y[i] });
         }
-
         $("#chartContainer").dxChart({
             dataSource: dataSource,
             commonSeriesSettings: {
@@ -41,7 +34,22 @@
                 }
             }
         });
+    }
+
+    $(function () {
+        get(X);
     });
+    function get(callback) {
+        $.ajax({
+            url: "/Home/FindTags",
+            type: "POST",
+            dataType: "json",
+            success: function (data) {
+                callback(data);
+            }
+        });
+    }
+
 </script>
 <div class="content">
     <div class="pane">
