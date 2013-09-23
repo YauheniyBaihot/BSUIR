@@ -37,7 +37,7 @@ namespace UI.Controllers
             return View();
         }
 
-        public JsonResult FindTags()
+        public JsonResult GetOriginalFunction()
         {
             List<ComplexNumber> lst = new List<ComplexNumber>();
             List<Double> argumentsLst = new List<Double>();

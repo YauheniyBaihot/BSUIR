@@ -1,11 +1,15 @@
 ﻿@model UI.Models.Chart
 <script type="text/javascript">
-    function X(data) {
+    $(function () {
+        get(X, '#chartContainer', 'sin(3x) + cos(x)', 'GetOriginalFunction');
+    });
+
+    function X(data, chartId, title) {
         var dataSource = [];
         for (var i = 0; i < data.X.length; i++) {
             dataSource.push({ year: data.X[i], cluster: data.Y[i] });
         }
-        $("#chartContainer").dxChart({
+        $(chartId).dxChart({
             dataSource: dataSource,
             commonSeriesSettings: {
                 type: "spline",
@@ -17,7 +21,7 @@
                 }
             },
             series: [
-                { valueField: "cluster", name: "Cluster" }
+                { valueField: "cluster", name: title },
             ],
             tooltip: {
                 enabled: true
@@ -26,7 +30,7 @@
                 verticalAlignment: "bottom",
                 horizontalAlignment: "center"
             },
-            title: "Architecture Share Over Time (Count)",
+            title: title,
             commonPaneSettings: {
                 border: {
                     visible: true,
@@ -34,18 +38,15 @@
                 }
             }
         });
-    }
+    }    
 
-    $(function () {
-        get(X);
-    });
-    function get(callback) {
+    function get(callback, chartId, title, viewName) {
         $.ajax({
-            url: "/Home/FindTags",
+            url: "/Home/" + viewName,
             type: "POST",
             dataType: "json",
             success: function (data) {
-                callback(data);
+                callback(data, chartId, title);
             }
         });
     }
