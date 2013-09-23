@@ -1,28 +1,27 @@
 ﻿@model UI.Models.Chart
 <script type="text/javascript">
-    $(function () {
-        get(X, '#chartContainer', 'sin(3x) + cos(x)', 'GetOriginalFunction');
+    var dataSource = [];
+    var series = [];
+
+    $(function () {        
+        getFunction(pushOriginalFunction, 'GetOriginalFunction', '#chartOriginalFunction');
+        getFunction(pushAfterFFT, 'GetAfterFFT', '#chartAfterFFT');
+        
     });
 
-    function X(data, chartId, title) {
-        var dataSource = [];
-        for (var i = 0; i < data.X.length; i++) {
-            dataSource.push({ year: data.X[i], cluster: data.Y[i] });
-        }
-        $(chartId).dxChart({
+    function drawCharts(title, chartId) {
+        $(chartId).dxChart({            
             dataSource: dataSource,
             commonSeriesSettings: {
                 type: "spline",
-                argumentField: "year"
+                argumentField: "x"
             },
             commonAxisSettings: {
                 grid: {
                     visible: true
                 }
             },
-            series: [
-                { valueField: "cluster", name: title },
-            ],
+            series: series,
             tooltip: {
                 enabled: true
             },
@@ -38,15 +37,33 @@
                 }
             }
         });
+    }
+
+    function pushOriginalFunction(data) {
+        for (var i = 0; i < data.X.length; i++) {
+            dataSource.push({ x: data.X[i], original: data.Y[i] });
+        }
+        series.push({ valueField: 'original', name: 'sin(3x) + cos(x)' });
     }    
 
-    function get(callback, chartId, title, viewName) {
+    function pushAfterFFT(data) {
+        for (var i = 0; i < data.X.length; i++) {
+            dataSource.push({ x: data.X[i], afterFFT: data.Y[i] });
+        }
+        series.push({ valueField: 'afterFFT', name: 'sin(x) + cos(x)' });
+    }
+
+    function getFunction(callback, viewName, chartId) {
         $.ajax({
             url: "/Home/" + viewName,
             type: "POST",
             dataType: "json",
+            error: function () {
+                console.log('a');
+            },
             success: function (data) {
-                callback(data, chartId, title);
+                callback(data);
+                drawCharts('Title', chartId);                
             }
         });
     }
@@ -57,7 +74,12 @@
         <div class="long-title">
             <h3></h3>
         </div>
-        <div id="chartContainer" style="width: 100%; height: 440px;"></div>
+        <div id="chartOriginalFunction" style="width: 100%; height: 440px;"></div>        
+    </div>
+    <div class="pane">
+        <div class="long-title">
+            <h3></h3>
+        </div>
+        <div id="chartAfterFFT" style="width: 100%; height: 440px;"></div>        
     </div>
 </div>
-

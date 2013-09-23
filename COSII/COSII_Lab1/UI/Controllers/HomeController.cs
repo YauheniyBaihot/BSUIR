@@ -49,5 +49,21 @@ namespace UI.Controllers
             }
             return Json(new Chart(argumentsLst, lst.Select(x => x.Re)));
         }
+
+        public JsonResult GetAfterFFT()
+        {
+            List<ComplexNumber> lst = new List<ComplexNumber>();
+            List<Double> argumentsLst = new List<Double>();
+            for (int i = 0; i < N; i++)
+            {
+                double argument = i * (Period / N);
+                argumentsLst.Add(argument);
+                lst.Add(new ComplexNumber(Math.Sin(3 * argument) + Math.Cos(argument)));
+            }
+            ComplexNumberHelper.ClearCounters();
+            var preliminaryResult = FourierTransform.FFTDecimationInFrequency(lst, false);
+            var FFTResult = FourierTransform.NormalizeAfterFFTDecimationInFrequency(preliminaryResult);
+            return Json(new Chart(FFTResult.Select(x => x.Phase), FFTResult.Select(x => x.Amplitude)));
+        }
     }
 }
