@@ -53,13 +53,13 @@ namespace BLLEntities
         {
             get
             {
-                if (Math.Tan(_Im / _Re) == 0)
+                if(Double.IsPositiveInfinity(1 / Math.Tan(_Im / _Re)))
                 {
-                    return Double.MaxValue;
+                    return Double.MaxValue / Math.Pow(10, 300);
                 }
-                if ((1 / Math.Tan(_Im / _Re)) > 10000)
+                if(Double.IsNegativeInfinity(1 / Math.Tan(_Im / _Re)))
                 {
-                    return 10000;
+                    return -Double.MaxValue / Math.Pow(10, 300);
                 }
                 return 1 / Math.Tan(_Im / _Re);
             }
