@@ -1,12 +1,12 @@
-﻿@model UI.Models.Chart
-<script type="text/javascript">
+﻿<script type="text/javascript">
     var dataSource = [];
     var series = [];
 
     $(function () {        
         getFunction(pushOriginalFunction, 'GetOriginalFunction', '#chartOriginalFunction');
-        getFunction(pushAfterFFT, 'GetAfterFFT', '#chartAfterFFT');
-        
+        getFunction(pushFFT, 'GetFFT', '#chartFFT');
+        getFunction(pushFFTPhase, 'GetAmplitudeFFT', '#chartFFTPhase');
+        getFunction(pushDFT, 'GetDFT', '#chartDFT');
     });
 
     function drawCharts(title, chartId) {
@@ -40,17 +40,36 @@
     }
 
     function pushOriginalFunction(data) {
+        clearData();
         for (var i = 0; i < data.X.length; i++) {
             dataSource.push({ x: data.X[i], original: data.Y[i] });
         }
         series.push({ valueField: 'original', name: 'sin(3x) + cos(x)' });
     }    
 
-    function pushAfterFFT(data) {
+    function pushFFT(data) {
+        clearData();        
         for (var i = 0; i < data.X.length; i++) {
-            dataSource.push({ x: data.X[i], afterFFT: data.Y[i] });
+            dataSource.push({ x: data.X[i], FFT: data.Y[i] });
         }
-        series.push({ valueField: 'afterFFT', name: 'sin(x) + cos(x)' });
+        series.push({ valueField: 'FFT', name: 'FFT' });
+    }
+
+    function pushFFTPhase(data) {
+        clearData();
+        console.log(data);
+        for (var i = 0; i < data.X.length - 1; i++) {
+            dataSource.push({ x: data.X[i], FFTPhase: data.Y[i] });
+        }
+        series.push({ valueField: 'FFTPhase', name: 'Phase Spectrum FFT' });
+    }
+
+    function pushDFT(data) {
+        clearData();
+        for (var i = 0; i < data.X.length; i++) {
+            dataSource.push({ x: data.X[i], DFT: data.Y[i] });
+        }
+        series.push({ valueField: 'DFT', name: 'DFT' });
     }
 
     function getFunction(callback, viewName, chartId) {
@@ -58,14 +77,16 @@
             url: "/Home/" + viewName,
             type: "POST",
             dataType: "json",
-            error: function () {
-                console.log('a');
-            },
             success: function (data) {
                 callback(data);
                 drawCharts('Title', chartId);                
             }
         });
+    }
+
+    function clearData() {
+        dataSource = [];
+        series = [];
     }
 
 </script>
@@ -80,6 +101,18 @@
         <div class="long-title">
             <h3></h3>
         </div>
-        <div id="chartAfterFFT" style="width: 100%; height: 440px;"></div>        
+        <div id="chartFFT" style="width: 100%; height: 440px;"></div>        
     </div>
+    <div class="pane">
+        <div class="long-title">
+            <h3></h3>
+        </div>
+        <div id="chartFFTPhase" style="width: 100%; height: 440px;"></div>        
+    </div>
+    <div class="pane">
+        <div class="long-title">
+            <h3></h3>
+        </div>
+        <div id="chartDFT" style="width: 100%; height: 440px;"></div>        
+    </div>    
 </div>

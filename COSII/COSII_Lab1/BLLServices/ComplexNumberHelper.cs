@@ -7,7 +7,7 @@ using BLLEntities;
 
 namespace BLLServices
 {
-    public static class ComplexNumberHelper
+    internal static class ComplexNumberHelper
     {
         #region Fields
 
@@ -38,25 +38,25 @@ namespace BLLServices
 
         #region Methods
 
-        public static ComplexNumber Sum(ComplexNumber ComplexNumber1, ComplexNumber ComplexNumber2)
+        internal static ComplexNumber Sum(ComplexNumber ComplexNumber1, ComplexNumber ComplexNumber2)
         {
             _SumCount++;
             return new ComplexNumber(ComplexNumber1.Re + ComplexNumber2.Re, ComplexNumber1.Im + ComplexNumber2.Im);
         }
 
-        public static ComplexNumber Min(ComplexNumber ComplexNumber1, ComplexNumber ComplexNumber2)
+        internal static ComplexNumber Min(ComplexNumber ComplexNumber1, ComplexNumber ComplexNumber2)
         {
             _SumCount++;
             return new ComplexNumber(ComplexNumber1.Re - ComplexNumber2.Re, ComplexNumber1.Im - ComplexNumber2.Im);
         }
 
-        public static ComplexNumber Mul(ComplexNumber ComplexNumber1, ComplexNumber ComplexNumber2)
+        internal static ComplexNumber Mul(ComplexNumber ComplexNumber1, ComplexNumber ComplexNumber2)
         {
             _MulCount++;
             return new ComplexNumber(ComplexNumber1.Re * ComplexNumber2.Re - ComplexNumber1.Im * ComplexNumber2.Im, ComplexNumber1.Re * ComplexNumber2.Im + ComplexNumber1.Im * ComplexNumber2.Re);
         }
 
-        public static ComplexNumber Pow(ComplexNumber ComplexNumber, int Pow)
+        internal static ComplexNumber Pow(ComplexNumber ComplexNumber, int Pow)
         {
             ComplexNumber Result = new ComplexNumber(1);
             for (int i = 0; i < Pow; i++)

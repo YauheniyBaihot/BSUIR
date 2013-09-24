@@ -7,7 +7,7 @@ using BLLEntities;
 
 namespace BLLServices
 {
-    public static class FourierTransform
+    internal static class FourierTransform
     {
         public static List<ComplexNumber> NormalizeAfterFFTDecimationInFrequency(List<ComplexNumber> Array)
         {
@@ -52,7 +52,7 @@ namespace BLLServices
             List<ComplexNumber> result = new List<ComplexNumber>();
             for (int i = 0; i < n; i++)
             {
-                result[i] = new ComplexNumber();
+                result.Add(new ComplexNumber());
                 for (int m = 0; m < n; m++)
                 {
                     var w = isBackTransform ? ComplexNumberHelper.GetMainRoot(n) : ComplexNumberHelper.GetMainRootNeg(n);

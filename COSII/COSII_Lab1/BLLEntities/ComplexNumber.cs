@@ -53,6 +53,14 @@ namespace BLLEntities
         {
             get
             {
+                if (Math.Tan(_Im / _Re) == 0)
+                {
+                    return Double.MaxValue;
+                }
+                if ((1 / Math.Tan(_Im / _Re)) > 10000)
+                {
+                    return 10000;
+                }
                 return 1 / Math.Tan(_Im / _Re);
             }
         }
