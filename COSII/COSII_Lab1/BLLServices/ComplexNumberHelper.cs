@@ -61,7 +61,7 @@ namespace BLLServices
             ComplexNumber Result = new ComplexNumber(1);
             for (int i = 0; i < Pow; i++)
             {
-                Result = Mul(Result, ComplexNumber);
+                Result = new ComplexNumber(Result.Re * ComplexNumber.Re - Result.Im * ComplexNumber.Im, Result.Re * ComplexNumber.Im + Result.Im * ComplexNumber.Re);
             }
             return Result;
         }

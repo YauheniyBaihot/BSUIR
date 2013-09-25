@@ -3,11 +3,11 @@
     var series = [];
 
     $(function () {
-        getFunction(pushOriginalFunction, 'GetOriginalFunction', '#chartOriginalFunction', 'spline', 'Original Function');
-        getFunction(pushFFT, 'GetFFT', '#chartFFT', 'spline', 'After FFT');
+        getFunction(pushOriginalFunction, 'GetOriginalFunction', '#chartOriginalFunction', 'line', 'Original Function');
+        getFunction(pushFFT, 'GetFFT', '#chartFFT', 'line', 'After FFT');
         getFunction(pushFFTPhase, 'GetPhaseFFT', '#chartFFTPhase', 'steparea', 'Phase Spectrum FFT');
         getFunction(pushFFTAmplitude, 'GetAmplitudeFFT', '#chartFFTAmplitude', 'steparea', 'Amplitude Spectrum FFT');
-        getFunction(pushDFT, 'GetDFT', '#chartDFT', 'spline', 'After DFT');
+        getFunction(pushDFT, 'GetDFT', '#chartDFT', 'line', 'After DFT');
         getFunction(pushDFTPhase, 'GetPhaseDFT', '#chartDFTPhase', 'steparea', 'Phase Spectrum DFT');
         getFunction(pushDFTAmplitude, 'GetAmplitudeDFT', '#chartDFTAmplitude', 'steparea', 'Amplitude Spectrum DFT');
     });
