@@ -19,9 +19,8 @@ namespace BLLServices
         private static Function _PhaseFFT;
         private static Function _AmplitudeDFT;
         private static Function _PhaseDFT;
-        private static List<double> ArgumentsX = new List<double>();
-        private static int _SumCount = 0;
-        private static int _MulCount = 0;
+        private static int _FFTCount = 0;
+        private static int _DFTCount = 0;
 
         public static Function OriginalFunction
         {
@@ -79,60 +78,57 @@ namespace BLLServices
             }
         }
 
-        public static int SumCount
+        public static int FFTCount
         {
             get
             {
-                return _SumCount;
+                return _FFTCount;
             }
         }
 
-        public static int MulCount
+        public static int DFTCount
         {
             get
             {
-                return _MulCount;
+                return _DFTCount;
             }
         }
 
         static FourierResults()
         {
-            List<ComplexNumber> lst = new List<ComplexNumber>();
-            List<Double> argumentsLst = new List<Double>();
+            List<ComplexNumber> OriginalX = new List<ComplexNumber>();
+            List<Double> ArgumentsX = new List<Double>();
             for (int i = 0; i < N; i++)
             {
-                ArgumentsX.Add((double)(i + 1));
                 double argument = i * (Period / N);
-                argumentsLst.Add(argument);
-                lst.Add(new ComplexNumber(Math.Sin(3 * argument) + Math.Cos(argument)));
+                ArgumentsX.Add(argument);
+                OriginalX.Add(new ComplexNumber(Math.Sin(3 * argument) + Math.Cos(3 * argument)));
             }
-            _OriginalFunction = new Function(argumentsLst, lst.Select(x => x.Re));
+            _OriginalFunction = new Function(ArgumentsX, OriginalX.Select(x => x.Re));
 
             ComplexNumberHelper.ClearCounters();
-            var preliminaryResult = FourierTransform.FFTDecimationInFrequency(lst, false);
-            var FFTResult = FourierTransform.NormalizeAfterFFTDecimationInFrequency(preliminaryResult);
+            var FFTResult = FourierTransform.FFTDecimationInFrequency(OriginalX, false);
+            FFTResult = FourierTransform.NormalizeAfterFFTDecimationInFrequency(FFTResult);
 
-            _PhaseFFT = new Function(argumentsLst, FFTResult.Select(xx => xx.Phase));
-            _AmplitudeFFT = new Function(argumentsLst, FFTResult.Select(xxx => xxx.Amplitude));
+            _PhaseFFT = new Function(ArgumentsX, FFTResult.Select(x => x.Phase));
+            _AmplitudeFFT = new Function(ArgumentsX, FFTResult.Select(x => x.Amplitude));
 
-            preliminaryResult = FourierTransform.FFTDecimationInFrequency(FFTResult, true);
-            FFTResult = FourierTransform.NormalizeAfterFFTDecimationInFrequency(preliminaryResult);
-            _FFTFunction = new Function(argumentsLst, FFTResult.Select(xa => xa.Re / N));
+            FFTResult = FourierTransform.FFTDecimationInFrequency(FFTResult, true);
+            FFTResult = FourierTransform.NormalizeAfterFFTDecimationInFrequency(FFTResult);
+            _FFTFunction = new Function(ArgumentsX, FFTResult.Select(x => x.Re / N));
 
-            _SumCount = ComplexNumberHelper.SumCount;
-            _MulCount = ComplexNumberHelper.MulCount;
+            _FFTCount = ComplexNumberHelper.MulCount;
 
             ComplexNumberHelper.ClearCounters();
-            var DFTResult = FourierTransform.DFT(lst, argumentsLst, false);
+            var DFTResult = FourierTransform.DFT(OriginalX, ArgumentsX, false);
 
-            _PhaseDFT = new Function(argumentsLst, DFTResult.Select(xaa => xaa.Phase));
-            _AmplitudeDFT = new Function(argumentsLst, DFTResult.Select(xaa => xaa.Amplitude));
+            _PhaseDFT = new Function(ArgumentsX, DFTResult.Select(x => x.Phase));
+            _AmplitudeDFT = new Function(ArgumentsX, DFTResult.Select(x => x.Amplitude));
 
-            DFTResult = FourierTransform.DFT(DFTResult, argumentsLst, true);
-            _DFTFunction = new Function(argumentsLst, DFTResult.Select(xc => xc.Re / DFTResult.Count));
+            DFTResult = FourierTransform.DFT(DFTResult, ArgumentsX, true);
+            _DFTFunction = new Function(ArgumentsX, DFTResult.Select(x => x.Re / N));
 
-            _SumCount = ComplexNumberHelper.SumCount;
-            _MulCount = ComplexNumberHelper.MulCount;
+            _DFTCount = ComplexNumberHelper.MulCount;
         }
     }
 }

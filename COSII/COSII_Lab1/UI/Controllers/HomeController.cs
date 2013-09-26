@@ -5,6 +5,7 @@ using System.Web;
 using System.Web.Mvc;
 using BLLEntities;
 using BLLServices;
+using UI.Models;
 
 namespace UI.Controllers
 {
@@ -12,17 +13,7 @@ namespace UI.Controllers
     {
         public ActionResult Index()
         {
-            return View();
-        }
-
-        public ActionResult Separately()
-        {
-            return View();
-        }
-
-        public ActionResult Comparison()
-        {
-            return View();
+            return View(new Counter(FourierResults.DFTCount, FourierResults.FFTCount));
         }
 
         public JsonResult GetOriginalFunction()
