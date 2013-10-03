@@ -54,12 +54,10 @@ int main(int argc, char **argv)
 			while (1)
 			{
 				rlen = recv(*ClientSocket, buf, 1024, 0);
-				printf("%d:", *ClientSocket);
 				for(int i = 0; i < rlen; i++)
 				{
 					printf("%c", buf[i]);
 				}
-				printf("\n");
 				if (rlen == 0)
 				{
 					printf("Socket %d closed the connection\n", *ClientSocket);
@@ -74,7 +72,6 @@ int main(int argc, char **argv)
 						closesocket(*ClientSocket);
 						break;
 					}
-					send(*ClientSocket, buf, rlen, 0);
 				}
 			}
 		}
