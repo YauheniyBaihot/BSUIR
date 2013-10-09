@@ -80,5 +80,6 @@ int main(int argc, char **argv)
 			printf("Failed to accept the connection\n");
 		}
 	}
+	WSACleanup();
 	return 0;
 }
