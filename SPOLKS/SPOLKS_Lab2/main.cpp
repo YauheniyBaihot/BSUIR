@@ -58,6 +58,7 @@ int main(int argc, char **argv)
 				{
 					printf("%c", buf[i]);
 				}
+				send(*ClientSocket, buf, rlen, 0);
 				if (rlen == 0)
 				{
 					printf("Socket %d closed the connection\n", *ClientSocket);
