@@ -13,9 +13,19 @@ namespace UI.Controllers
     {
         public ActionResult Index()
         {
+            
+        }
+        
+        public ActionResult Lab1()
+        {
             return View(new Counter(FourierResults.DFTCount, FourierResults.FFTCount));
         }
-
+        
+        public ActionResult Lab2()
+        {
+            
+        }
+        
         public JsonResult GetOriginalFunction()
         {
             return Json(FourierResults.OriginalFunction);
