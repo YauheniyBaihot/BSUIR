@@ -13,7 +13,7 @@ namespace UI.Controllers
     {
         public ActionResult Index()
         {
-            
+            return View();
         }
         
         public ActionResult Lab1()
@@ -23,7 +23,7 @@ namespace UI.Controllers
         
         public ActionResult Lab2()
         {
-            
+            return View();
         }
         
         public JsonResult GetOriginalFunction()
