@@ -17,6 +17,8 @@ namespace BLLServices
         private static Function _CosFunction;
         private static Function _ConvolutionFunction;
         private static Function _CorrelationFunction;
+        private static Function _FFTConvolutionFunction;
+        private static Function _FFTCorrelationFunction;
 
         #endregion
 
@@ -54,6 +56,22 @@ namespace BLLServices
             }
         }
 
+        public static Function FFTConvolutionFunction
+        {
+            get
+            {
+                return _FFTConvolutionFunction;
+            }
+        }
+
+        public static Function FFTCorrelationFunction
+        {
+            get
+            {
+                return _FFTCorrelationFunction;
+            }
+        }
+
         #endregion
 
         #region Methods
@@ -73,6 +91,12 @@ namespace BLLServices
             _SinFunction = new Function(ArgumentsX, Sin.Select(x => x.Re));
             _CosFunction = new Function(ArgumentsX, Cos.Select(x => x.Re));
 
+            var ResultConvolution = FourierTransform.Convolution(Cos, Sin);
+            _ConvolutionFunction = new Function(ArgumentsX, ResultConvolution.Select(x => x.Re / N));
+
+            var ResultCorrelation = FourierTransform.Correlation(Cos, Sin);
+            _CorrelationFunction = new Function(ArgumentsX, ResultCorrelation.Select(x => x.Re / N));
+
             var FFTResult = FourierTransform.FFTDecimationInFrequency(Sin, false);
             var FFTResultSin = FourierTransform.NormalizeAfterFFTDecimationInFrequency(FFTResult);
             FFTResult = FourierTransform.FFTDecimationInFrequency(Cos, false);
@@ -80,14 +104,14 @@ namespace BLLServices
 
             var MultiplayFunctions = FourierTransform.MutiplayArrays(FFTResultSin, FFTResultCos);
             FFTResult = FourierTransform.FFTDecimationInFrequency(MultiplayFunctions, true);
-            var resultConvolution = FourierTransform.NormalizeAfterFFTDecimationInFrequency(FFTResult);
-            _ConvolutionFunction = new Function(ArgumentsX, resultConvolution.Select(x => x.Re));
+            var ResultFFTConvolution = FourierTransform.NormalizeAfterFFTDecimationInFrequency(FFTResult);
+            _FFTConvolutionFunction = new Function(ArgumentsX, ResultFFTConvolution.Select(x => x.Re));
 
             var FFTResultSinConjugates = FourierTransform.GetComplexConjugates(FFTResultSin);
             MultiplayFunctions = FourierTransform.MutiplayArrays(FFTResultSinConjugates, FFTResultCos);
             FFTResult = FourierTransform.FFTDecimationInFrequency(MultiplayFunctions, true);
-            var resultCorrelation = FourierTransform.NormalizeAfterFFTDecimationInFrequency(FFTResult);
-            _CorrelationFunction = new Function(ArgumentsX, resultCorrelation.Select(x => x.Re));
+            var ResultFFTCorrelation = FourierTransform.NormalizeAfterFFTDecimationInFrequency(FFTResult);
+            _FFTCorrelationFunction = new Function(ArgumentsX, ResultFFTCorrelation.Select(x => x.Re));
         }
 
         #endregion

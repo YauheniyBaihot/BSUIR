@@ -87,6 +87,16 @@ namespace UI.Controllers
             return Json(Lab2Results.CorrelationFunction);
         }
 
+        public JsonResult GetFFTConvolutionFunction()
+        {
+            return Json(Lab2Results.FFTConvolutionFunction);
+        }
+
+        public JsonResult GetFFTCorrelationFunction()
+        {
+            return Json(Lab2Results.FFTCorrelationFunction);
+        }
+
         #endregion
     }
 }

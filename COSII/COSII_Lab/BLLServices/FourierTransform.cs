@@ -89,5 +89,49 @@ namespace BLLServices
             }
             return Result;
         }
+
+        public static List<ComplexNumber> Correlation(List<ComplexNumber> Array1, List<ComplexNumber> Array2)
+        {
+            int N = Array1.Count;
+            List<ComplexNumber> Result = new List<ComplexNumber>();            
+            for (int m = 0; m < N; m++)
+            {
+                Result.Add(new ComplexNumber());
+                for (int h = 0; h < N; h++)
+                {
+                    if (m + h < N)
+                    {
+                        Result[m] = ComplexNumberHelper.Sum(Result[m], ComplexNumberHelper.Mul(Array1[h], Array2[m + h]));
+                    }
+                    else
+                    {
+                        Result[m] = ComplexNumberHelper.Sum(Result[m], ComplexNumberHelper.Mul(Array1[h], Array2[m + h - N]));
+                    }
+                }
+            }
+            return Result;
+        }
+
+        public static List<ComplexNumber> Convolution(List<ComplexNumber> Array1, List<ComplexNumber> Array2)
+        {
+            int N = Array1.Count;
+            List<ComplexNumber> Result = new List<ComplexNumber>();
+            for (var m = 0; m < N; m++)
+            {
+                Result.Add(new ComplexNumber());
+                for (var h = 0; h < N; h++)
+                {
+                    if (m - h >= 0)
+                    {
+                        Result[m] = ComplexNumberHelper.Sum(Result[m], ComplexNumberHelper.Mul(Array1[h], Array2[m - h]));
+                    }
+                    else
+                    {
+                        Result[m] = ComplexNumberHelper.Sum(Result[m], ComplexNumberHelper.Mul(Array1[h], Array2[m - h + N]));
+                    }
+                }
+            }
+            return Result.ToList();
+        }
     }
 }

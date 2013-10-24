@@ -9,6 +9,8 @@
         getFunction(pushCosFunction, 'GetCosFunction', '#chartCosFunction', 'line', 'Cos Function');
         getFunction(pushConvolutionFunction, 'GetConvolutionFunction', '#chartConvolutionFunction', 'line', 'Convolution Function');
         getFunction(pushCorrelationFunction, 'GetCorrelationFunction', '#chartCorrelationFunction', 'line', 'Correlation Function');
+        getFunction(pushFFTConvolutionFunction, 'GetFFTConvolutionFunction', '#chartFFTConvolutionFunction', 'line', 'FFT Convolution Function');
+        getFunction(pushFFTCorrelationFunction, 'GetFFTCorrelationFunction', '#chartFFTCorrelationFunction', 'line', 'FFT Correlation Function');
     });
 </script>
 
@@ -48,5 +50,17 @@
             <h3></h3>
         </div>
         <div id="chartCorrelationFunction" style="width: 100%; height: 440px;"></div>
+    </div>
+    <div class="pane">
+        <div class="long-title">
+            <h3></h3>
+        </div>
+        <div id="chartFFTConvolutionFunction" style="width: 100%; height: 440px;"></div>
+    </div>
+    <div class="pane">
+        <div class="long-title">
+            <h3></h3>
+        </div>
+        <div id="chartFFTCorrelationFunction" style="width: 100%; height: 440px;"></div>
     </div>
 </div>
