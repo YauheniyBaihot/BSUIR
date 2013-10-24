@@ -104,14 +104,14 @@ namespace BLLServices
 
             var MultiplayFunctions = FourierTransform.MutiplayArrays(FFTResultSin, FFTResultCos);
             FFTResult = FourierTransform.FFTDecimationInFrequency(MultiplayFunctions, true);
-            var ResultFFTConvolution = FourierTransform.NormalizeAfterFFTDecimationInFrequency(FFTResult);
-            _FFTConvolutionFunction = new Function(ArgumentsX, ResultFFTConvolution.Select(x => x.Re));
+            ResultConvolution = FourierTransform.NormalizeAfterFFTDecimationInFrequency(FFTResult);
+            _FFTConvolutionFunction = new Function(ArgumentsX, ResultConvolution.Select(x => x.Re));
 
             var FFTResultSinConjugates = FourierTransform.GetComplexConjugates(FFTResultSin);
             MultiplayFunctions = FourierTransform.MutiplayArrays(FFTResultSinConjugates, FFTResultCos);
             FFTResult = FourierTransform.FFTDecimationInFrequency(MultiplayFunctions, true);
-            var ResultFFTCorrelation = FourierTransform.NormalizeAfterFFTDecimationInFrequency(FFTResult);
-            _FFTCorrelationFunction = new Function(ArgumentsX, ResultFFTCorrelation.Select(x => x.Re));
+            ResultCorrelation = FourierTransform.NormalizeAfterFFTDecimationInFrequency(FFTResult);
+            _FFTCorrelationFunction = new Function(ArgumentsX, ResultCorrelation.Select(x => x.Re));
         }
 
         #endregion
