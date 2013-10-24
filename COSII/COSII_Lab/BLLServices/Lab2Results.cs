@@ -67,8 +67,8 @@ namespace BLLServices
             {
                 double argument = i * (Period / N);
                 ArgumentsX.Add(argument);
-                Sin.Add(new ComplexNumber(Math.Cos(2 * argument)));
-                Cos.Add(new ComplexNumber(Math.Sin(5 * argument)));
+                Cos.Add(new ComplexNumber(Math.Cos(2 * argument)));
+                Sin.Add(new ComplexNumber(Math.Sin(5 * argument)));
             }
             _SinFunction = new Function(ArgumentsX, Sin.Select(x => x.Re));
             _CosFunction = new Function(ArgumentsX, Cos.Select(x => x.Re));
