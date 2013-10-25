@@ -3,19 +3,18 @@
 #include <WinSock2.h>
 #pragma comment(lib,"ws2_32.lib")
 
-class Server
+class Client
 {
-	SOCKET Listener;		
 	sockaddr_in ListenerName;
 
 public:
-	SOCKET ClientSocket;
+	SOCKET Listener;		
 
-	Server(void);
-	~Server(void);
+	Client(void);
+	~Client(void);
 
-	int StartServer(char* Log);
-	void CloseServer();
+	int StartClient(char* Log);
+	void CloseClient();
 	int Recv(char *Buffer, int Symbols);
 	void Send(char *Buffer, int Symbols);
 };
