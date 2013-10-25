@@ -13,7 +13,7 @@ int main(int argc, char** argv)
 	FILE *f;
 	//инициализация сокета в случае сервера/клиента TCP. Интернет, тип сокета TCP, протокол
 	SOCKET s = socket(AF_INET, SOCK_STREAM, 0);
-	
+
 	//структура для инициализация сервера
 	struct sockaddr_in myCom;
 	//используемый домен
@@ -35,23 +35,23 @@ int main(int argc, char** argv)
 
 	while (true)//бесконечный цикл
 	{
-	f = fopen("E:\\newinfo.txt","ab");//если его нет, перед открытием newinfo.txt создается 
-	char buf[100];
-	int r = recv(s1, buf, sizeof(buf), 0);//прием файла от клиента. Функция возвращает число считанных байтов 
-	if (r <= 0)//если нет данных
-	{
-		puts("0 bytes");
-		printf("%dError: \n", WSAGetLastError());
-	  return false;//выход из цикла
-	}
-	fwrite(buf,1,r,f);
-	//WriteFile(f, buf, r, NULL, NULL);// указатель на файл, буфер, из которого берутся данные, байт для записи, указатель на количество записанных байт 
-	//передача ответа после приема 
-	//printf("\n%s \n",buf);
-	printf("receive bytes: %d, part: %d\n\n",r,i);
-	send(s1,"ready",6*sizeof(char),0);
-	i++;
-	fclose (f);
+		f = fopen("E:\\newinfo.txt","ab");//если его нет, перед открытием newinfo.txt создается 
+		char buf[100];
+		int r = recv(s1, buf, sizeof(buf), 0);//прием файла от клиента. Функция возвращает число считанных байтов 
+		if (r <= 0)//если нет данных
+		{
+			puts("0 bytes");
+			printf("%dError: \n", WSAGetLastError());
+			return false;//выход из цикла
+		}
+		fwrite(buf,1,r,f);
+		//WriteFile(f, buf, r, NULL, NULL);// указатель на файл, буфер, из которого берутся данные, байт для записи, указатель на количество записанных байт 
+		//передача ответа после приема 
+		//printf("\n%s \n",buf);
+		printf("receive bytes: %d, part: %d\n\n",r,i);
+		send(s1,"ready",6*sizeof(char),0);
+		i++;
+		fclose (f);
 	}
 	getch();
 	//размыкание соединения
