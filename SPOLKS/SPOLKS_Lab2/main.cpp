@@ -44,8 +44,7 @@ int main(int argc, char **argv)
 	}
 	while (1)
 	{
-		SOCKET *ClientSocket = (SOCKET*)malloc(sizeof(SOCKET));
-		*ClientSocket = accept(listener, NULL, NULL);
+		SOCKET ClientSocket = accept(listener, NULL, NULL);
 		if (*ClientSocket != INVALID_SOCKET)
 		{
 			char buf[1024];
@@ -53,16 +52,16 @@ int main(int argc, char **argv)
 			printf("Client thread (socket %d) is ready\n", *ClientSocket);
 			while (1)
 			{
-				rlen = recv(*ClientSocket, buf, 1024, 0);
+				rlen = recv(ClientSocket, buf, 1024, 0);
 				for(int i = 0; i < rlen; i++)
 				{
 					printf("%c", buf[i]);
 				}
-				send(*ClientSocket, buf, rlen, 0);
+				send(ClientSocket, buf, rlen, 0);
 				if (rlen == 0)
 				{
 					printf("Socket %d closed the connection\n", *ClientSocket);
-					closesocket(*ClientSocket);
+					closesocket(ClientSocket);
 					break;
 				}
 				else 
@@ -70,7 +69,7 @@ int main(int argc, char **argv)
 					if (rlen == SOCKET_ERROR)
 					{
 						printf("Recv socket error at socket %d\n", *ClientSocket);
-						closesocket(*ClientSocket);
+						closesocket(ClientSocket);
 						break;
 					}
 				}
