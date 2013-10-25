@@ -26,7 +26,6 @@ int main(int argc, char** argv)
 			printf("read symbols: %d, part: %d, pos: %ld \n",symbols,i,size);
 			printf("\n");
 			//if(symbols!=0)
-			Sleep(3000);
 			C->Send(bufer, symbols);
 			i++;
 			//if (y==0) break;
