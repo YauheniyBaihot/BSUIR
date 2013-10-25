@@ -27,9 +27,11 @@ int main(int argc, char** argv)
 	if (rc<0) printf ("error");
 
 	FILE *f;
-	f = fopen("E:\\for_send.txt","rb");
+	f = fopen("D:\\for_send.txt","r");
 	//lenfile= filelength(fileno(f));//определение размера файла в байтах
 	//bufer=new char[lenfile];
+	if(f != NULL)
+	{
 	while(!feof(f)) //пока не конец файла, передаем частями файл (сколько помещается в буфере)
 	{
 		char bufer[100];
@@ -47,6 +49,7 @@ int main(int argc, char** argv)
 		printf("%s\n",buf);
 	}
 	fclose (f);
+	}
 	getch();
 	// размыкание соединения
 	shutdown(s, 2);
