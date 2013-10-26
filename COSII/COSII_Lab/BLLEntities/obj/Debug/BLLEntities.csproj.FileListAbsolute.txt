@@ -1,5 +1,0 @@
-d:\GitHub\BSUIR\COSII\COSII_Lab1\BLLEntities\bin\Debug\BLLEntities.dll
-d:\GitHub\BSUIR\COSII\COSII_Lab1\BLLEntities\bin\Debug\BLLEntities.pdb
-d:\GitHub\BSUIR\COSII\COSII_Lab1\BLLEntities\obj\Debug\BLLEntities.csprojResolveAssemblyReference.cache
-d:\GitHub\BSUIR\COSII\COSII_Lab1\BLLEntities\obj\Debug\BLLEntities.dll
-d:\GitHub\BSUIR\COSII\COSII_Lab1\BLLEntities\obj\Debug\BLLEntities.pdb
