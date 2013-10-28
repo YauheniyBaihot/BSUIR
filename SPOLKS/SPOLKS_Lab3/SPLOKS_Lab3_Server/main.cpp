@@ -2,6 +2,10 @@
 #pragma comment(lib,"ws2_32.lib")
 #include <stdio.h>
 #include <conio.h>
+#include <io.h>
+#include <string>
+#include <iostream>
+using namespace std;
 #include "Server.h"
 
 int main(int argc, char** argv)
@@ -9,13 +13,40 @@ int main(int argc, char** argv)
 	while(true)
 	{
 		int y, i=1, symbols, size;	
-		FILE *file;
+
 		Server *server = new Server();
 		char* Log = new char[100];
 		server->StartServer("127.0.0.1", "1200", Log);
-		file = fopen("D:\\for_send.txt","r");
+
+		char *FilePath = "D:\\for_send.txt";
+		FILE *file;
+		file = fopen(FilePath,"r");
+		
+
 		if(file != NULL)
 		{
+			char *FileName = new char[100];
+			char *Extension = new char[5];
+			_splitpath(FilePath, new char[1], new char[200], FileName, Extension);
+			strcat(FileName, Extension);
+			char *FileLength = new char[15];
+			itoa(filelength(fileno(file)), FileLength, 10);
+			char *InformationBuffer = new char[strlen(FileLength) + strlen(FileName) + 2];
+			InformationBuffer[0] = '\0';
+			strcat(InformationBuffer, FileName);
+			strcat(InformationBuffer, "#");
+			strcat(InformationBuffer, FileLength);
+			strcat(InformationBuffer, "#");
+
+			char buf[1024];//для приема сообщений сервера			
+			server->Send(InformationBuffer, strlen(InformationBuffer));
+			y = server->Recv(buf, sizeof(buf));
+
+			int a = atoi(buf);
+			if(a != 0)
+			{
+				fseek(file, a, SEEK_SET);
+			}
 			while(!feof(file)) //пока не конец файла, передаем частями файл (сколько помещается в буфере)
 			{
 				char bufer[2];
@@ -25,10 +56,11 @@ int main(int argc, char** argv)
 				printf("read symbols: %d, part: %d, pos: %ld \n",symbols,i,size);
 				printf("\n");
 				//if(symbols!=0)
+				Sleep(500);
 				server->Send(bufer, symbols);
 				i++;
 				//if (y==0) break;
-				char buf[1024];//для приема сообщений сервера
+				
 				y = server->Recv(buf, sizeof(buf));
 				printf("%s\n",buf);
 			}

@@ -10,17 +10,54 @@ using namespace std;
 
 int main(int argc, char** argv)
 {
-	int rc, size, symbols, y=0, i=1; 
+	int rc, size, symbols = 0, y=0, i=1; 
 	Client *client = new Client();
 	char* Log = new char[100];
+	FILE *file;
 	if(!client->StartClient(argv[1], argv[2], Log))
 	{
 		//printf("Connected to %s %s\n", argv[1], argv[2]);
-		printf("Connected to 127.0.0.1 1200\n");
+		printf("Connected to 127.0.0.1 4003\n");
+
+
+		file = fopen("log.txt", "r");
+		char *bufer = new char[1];
+		if(file != NULL)
+		{			
+			symbols=fread(bufer,1,1,file);
+			fclose(file);
+		}		
+
+		char InformationBuffer[1024];
+		client->Recv(InformationBuffer, 1024);
+		if(atoi(bufer) != 0)
+		{
+			client->Send(bufer, strlen(bufer) * sizeof(char));
+		}
+		else
+		{
+			client->Send("ready", 6*sizeof(char));
+		}
+
+		string InformationData = string(InformationBuffer);
+		int FlagPosition1 = 0, FlagPosition2 = 0;
+
+		FlagPosition1 = InformationData.find_first_of('#', FlagPosition1);
+		char *FileName = new char[FlagPosition1];
+		copy(InformationData.begin(), InformationData.begin() + FlagPosition1, FileName);
+		FileName[FlagPosition1] = '\0';
+
+		FlagPosition2 = InformationData.find_first_of('#', FlagPosition1 + 1);
+		char *FileLengthChar = new char[FlagPosition2 - FlagPosition1 - 1];
+		copy(InformationData.begin() + FlagPosition1 + 1, InformationData.begin() + FlagPosition2, FileLengthChar);
+		FileLengthChar[FlagPosition2 - FlagPosition1 - 1] = '\0';
+
+		int FileLengthInt = atoi(FileLengthChar);
+		int ByteCount = 0;
 		while(true)
 		{
-			FILE *file;
-			file = fopen("D:\\newinfo.txt","ab");//если его нет, перед открытием newinfo.txt создается 
+			
+			file = fopen("D:\\newinfo.txt", "ab");//если его нет, перед открытием newinfo.txt создается 
 			char buf[2];
 			int r = client->Recv(buf, 2);
 			if (r <= 0)//если нет данных
@@ -28,9 +65,22 @@ int main(int argc, char** argv)
 				puts("0 bytes");
 				printf("%dError: \n", WSAGetLastError());
 				client->CloseClient();
+				fclose(file);
+
+				if(FileLengthInt != ByteCount)
+				{
+					file = fopen("log.txt", "a");
+					itoa(ByteCount, FileLengthChar, 10);
+					fwrite(FileLengthChar, 1, strlen(FileLengthChar), file);
+					fclose(file);
+				}
+
 				break;
 			}
 			fwrite(buf,1,r,file);
+
+			ByteCount += r;
+
 			//WriteFile(file, buf, r, NULL, NULL);// указатель на файл, буфер, из которого берутся данные, байт для записи, указатель на количество записанных байт 
 			//передача ответа после приема 
 			//printf("\n%s \n",buf);
@@ -66,7 +116,7 @@ int main(int argc, char** argv)
 	//lenfile= filelength(fileno(file));//определение размера файла в байтах
 	//bufer=new char[lenfile];
 	getch();
-	client->CloseClient();
+	//client->CloseClient();
 	return 0;
 }
 
