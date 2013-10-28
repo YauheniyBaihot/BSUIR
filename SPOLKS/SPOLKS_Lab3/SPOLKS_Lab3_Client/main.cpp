@@ -3,40 +3,70 @@
 #include <stdio.h>
 #include <conio.h>
 #include <io.h>
+#include <string>
+#include <iostream>
+using namespace std;
 #include "Client.h"
 
 int main(int argc, char** argv)
 {
 	int rc, size, symbols, y=0, i=1; 
-	Client *C = new Client();
-	C->StartClient(*argv);
-
-	FILE *f;
-	f = fopen("D:\\for_send.txt","r");
-	//lenfile= filelength(fileno(f));//определение размера файла в байтах
-	//bufer=new char[lenfile];
-	if(f != NULL)
+	Client *client = new Client();
+	char* Log = new char[100];
+	if(!client->StartClient(argv[1], argv[2], Log))
 	{
-		while(!feof(f)) //пока не конец файла, передаем частями файл (сколько помещается в буфере)
+		//printf("Connected to %s %s\n", argv[1], argv[2]);
+		printf("Connected to 127.0.0.1 1200\n");
+		while(true)
 		{
-			char bufer[2];
-			symbols=fread(bufer,1,2,f);//в буфер один раз считывается sizeof(bufer) бит из файла, возвращает число символов
-			size=ftell(f);//функция возвращает текущую позицию
-			//printf("\n%s \n",bufer);
-			printf("read symbols: %d, part: %d, pos: %ld \n",symbols,i,size);
-			printf("\n");
-			//if(symbols!=0)
-			C->Send(bufer, symbols);
+			FILE *file;
+			file = fopen("D:\\newinfo.txt","ab");//если его нет, перед открытием newinfo.txt создается 
+			char buf[2];
+			int r = client->Recv(buf, 2);
+			if (r <= 0)//если нет данных
+			{
+				puts("0 bytes");
+				printf("%dError: \n", WSAGetLastError());
+				client->CloseClient();
+				break;
+			}
+			fwrite(buf,1,r,file);
+			//WriteFile(file, buf, r, NULL, NULL);// указатель на файл, буфер, из которого берутся данные, байт для записи, указатель на количество записанных байт 
+			//передача ответа после приема 
+			//printf("\n%s \n",buf);
+			printf("receive bytes: %d, part: %d\n\n",r,i);
+			client->Send("ready", 6*sizeof(char));
 			i++;
-			//if (y==0) break;
-			char buf[1024];//для приема сообщений сервера
-			y = C->Recv(buf, sizeof(buf));
-			printf("%s\n",buf);
+			fclose (file);
+			/*string Command;
+			getline(cin, Command);
+			if(Command[0] == 's')
+			{
+			char *FilePath = new char[Command.length() - 2];
+			copy(Command.begin() + 2, Command.end(), FilePath);
+			FilePath[Command.size() - 2] = '\0';
+			FILE *file;
+			file = fopen(FilePath,"r");
+			char *FileName = new char[100];
+			char *Extension = new char[5];
+			_splitpath(FilePath, new char[1], new char[200], FileName, Extension);
+			strcat(FileName, Extension);
+			char *FileLength = new char[15];
+			itoa(filelength(fileno(file)), FileLength, 10);
+			char *bufer1 = new char[strlen(FileLength) + strlen(FileName) + 1];
+			bufer1[0] = '\0';
+			strcat(bufer1, FileName);
+			strcat(bufer1, "#");
+			strcat(bufer1, FileLength);
+
+			}*/
 		}
-		fclose (f);
 	}
+
+	//lenfile= filelength(fileno(file));//определение размера файла в байтах
+	//bufer=new char[lenfile];
 	getch();
-	C->CloseClient();
+	client->CloseClient();
 	return 0;
 }
 

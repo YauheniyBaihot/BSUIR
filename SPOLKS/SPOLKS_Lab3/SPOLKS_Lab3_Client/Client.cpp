@@ -12,15 +12,15 @@ Client::~Client(void)
 }
 
 
-int Client::StartClient(char* Log)
+int Client::StartClient(char* IpAddress, char* Port, char* Log)
 {
-	int Result = SocketHelper::InitializeSocket(&Listener, &ListenerName, inet_addr("127.0.0.1"), htons(1200), Log);
+	int Result = SocketHelper::InitializeSocket(&Listener, &ListenerName, inet_addr("127.0.0.1"), htons(4003), Log);
 	if(!Result)
 	{
 		int Answer = connect(Listener, (const sockaddr*)&ListenerName, sizeof(ListenerName));
 		if (Answer != 0)
 		{
-			Log = "Failed to connect socket\n";
+			strcpy(Log, "Failed to connect socket\n");
 			return 0;
 		}
 	}

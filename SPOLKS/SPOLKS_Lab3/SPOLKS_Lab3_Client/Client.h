@@ -13,7 +13,7 @@ public:
 	Client(void);
 	~Client(void);
 
-	int StartClient(char* Log);
+	int StartClient(char* IpAddress, char* Port, char* Log);
 	void CloseClient();
 	int Recv(char *Buffer, int Symbols);
 	void Send(char *Buffer, int Symbols);

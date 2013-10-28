@@ -12,21 +12,21 @@ Server::~Server(void)
 }
 
 
-int Server::StartServer(char* Log)
+int Server::StartServer(char* IpAddress, char* Port, char* Log)
 {
-	int Result = SocketHelper::InitializeSocket(&Listener, &ListenerName, INADDR_ANY, htons(1200), Log);
+	int Result = SocketHelper::InitializeSocket(&Listener, &ListenerName, INADDR_ANY, htons(4003), Log);
 	if(!Result)
 	{
 		int Answer = bind(Listener, (const sockaddr*)&ListenerName, sizeof(ListenerName));
 		if (Answer != 0)
 		{
-			Log = "Failed to bind socket\n";
+			strcpy(Log, "Failed to bind socket\n");
 			return 0;
 		}
 		Answer = listen(Listener,SOMAXCONN);
 		if (Answer != 0)
 		{
-			Log = "Failed to put socket into listening state\n";
+			strcpy(Log, "Failed to put socket into listening state\n");
 			return 0;
 		}
 		ClientSocket = accept(Listener, NULL, NULL);

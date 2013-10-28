@@ -14,7 +14,7 @@ public:
 	Server(void);
 	~Server(void);
 
-	int StartServer(char* Log);
+	int StartServer(char* IpAddress, char* Port, char* Log);
 	void CloseServer();
 	int Recv(char *Buffer, int Symbols);
 	void Send(char *Buffer, int Symbols);

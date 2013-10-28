@@ -7,18 +7,18 @@ int SocketHelper::InitializeSocket(SOCKET *Socket, sockaddr_in *SocketAddress, U
 	int WSAStartupReturnValue = WSAStartup( MAKEWORD( 2, 2 ), &WsaData );
 	if ( WSAStartupReturnValue != 0 )
 	{
-		Log = "Can't find usable wsock32.dll\n";
+		strcpy(Log, "Can't find usable wsock32.dll\n");
 		return 1;
 	}
 	if ( LOBYTE( WsaData.wVersion ) != 2 || HIBYTE( WsaData.wVersion ) != 2 )
 	{
-		Log = "Wsock32.dll of wrong version\n";
+		strcpy(Log, "Wsock32.dll of wrong version\n");
 		return 2; 
 	}
 	*Socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 	if (*Socket == 0)
 	{
-		Log = "Failed to create socket\n";
+		strcpy(Log, "Failed to create socket\n");
 		return 3;
 	}
 	SocketAddress->sin_family = AF_INET;
