@@ -40,13 +40,9 @@ int main(int argc, char** argv)
 
 			char buf[1024];//для приема сообщений сервера			
 			server->Send(InformationBuffer, strlen(InformationBuffer));
-			y = server->Recv(buf, sizeof(buf));
-
-			int a = atoi(buf);
-			if(a != 0)
-			{
-				fseek(file, a, SEEK_SET);
-			}
+			server->Recv(buf, sizeof(buf));
+			fseek(file, atoi(buf), SEEK_SET);
+			
 			while(!feof(file)) //пока не конец файла, передаем частями файл (сколько помещается в буфере)
 			{
 				char bufer[2];

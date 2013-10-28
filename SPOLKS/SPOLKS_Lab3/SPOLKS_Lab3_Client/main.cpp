@@ -10,7 +10,7 @@ using namespace std;
 
 int main(int argc, char** argv)
 {
-	int rc, size, symbols = 0, y=0, i=1; 
+	int rc, size, y=0, i=1; 
 	Client *client = new Client();
 	char* Log = new char[100];
 	FILE *file;
@@ -24,7 +24,7 @@ int main(int argc, char** argv)
 		char *bufer = new char[1];
 		if(file != NULL)
 		{			
-			symbols=fread(bufer,1,1,file);
+			fread(bufer,1,1,file);
 			fclose(file);
 		}		
 
