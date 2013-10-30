@@ -24,6 +24,12 @@ int main(int argc, char** argv)
 		//printf("Connected to %s %s\n", argv[1], argv[2]);
 		printf("Connected to 127.0.0.1 4003\n");
 
+		char FileNameBufer[106];
+		client->Recv(FileNameBufer, 106);
+		string FileName(FileNameBufer);
+		FileNameBufer[FileName.find_last_of('#', 105)] = '\0';
+		client->Send("ready", 6 * sizeof(char));
+
 		char FileLengthBufer[15];
 		client->Recv(FileLengthBufer, 15);
 		int BytesCount = ReadCountOfSendedBytesFromLogFile();
@@ -37,18 +43,20 @@ int main(int argc, char** argv)
 		{
 			client->Send("ready", 6 * sizeof(char));
 		}
-	
+
 
 		int FileLength = atoi(FileLengthBufer);
-		
+
 		while(true)
 		{
 
-			file = fopen("D:\\newinfo.txt", "ab");//если его нет, перед открытием newinfo.txt создается 
+			file = fopen(FileNameBufer, "ab");//если его нет, перед открытием newinfo.txt создается 
 			char buf[2];
+
 			int r = client->Recv(buf, 2);
 			if (r <= 0)//если нет данных
 			{
+				
 				puts("0 bytes");
 				printf("%dError: \n", WSAGetLastError());
 				client->CloseClient();
@@ -70,6 +78,7 @@ int main(int argc, char** argv)
 			client->Send("ready", 6*sizeof(char));
 			i++;
 			fclose (file);
+
 		}
 	}
 	getch();
