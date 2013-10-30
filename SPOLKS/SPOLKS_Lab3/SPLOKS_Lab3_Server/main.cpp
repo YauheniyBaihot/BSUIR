@@ -5,6 +5,7 @@
 #include <io.h>
 #include <string>
 #include <iostream>
+#include <fstream>
 using namespace std;
 #include "Server.h"
 
@@ -24,22 +25,13 @@ int main(int argc, char** argv)
 		
 
 		if(file != NULL)
-		{
-			char *FileName = new char[100];
-			char *Extension = new char[5];
-			_splitpath(FilePath, new char[1], new char[200], FileName, Extension);
-			strcat(FileName, Extension);
+		{			
 			char *FileLength = new char[15];
-			itoa(filelength(fileno(file)), FileLength, 10);
-			char *InformationBuffer = new char[strlen(FileLength) + strlen(FileName) + 2];
-			InformationBuffer[0] = '\0';
-			strcat(InformationBuffer, FileName);
-			strcat(InformationBuffer, "#");
-			strcat(InformationBuffer, FileLength);
-			strcat(InformationBuffer, "#");
 
+			itoa(filelength(fileno(file)), FileLength, 10);
+			
 			char buf[1024];//для приема сообщений сервера			
-			server->Send(InformationBuffer, strlen(InformationBuffer));
+			server->Send(FileLength, strlen(FileLength));
 			server->Recv(buf, sizeof(buf));
 			fseek(file, atoi(buf), SEEK_SET);
 			
@@ -58,32 +50,18 @@ int main(int argc, char** argv)
 				//if (y==0) break;
 				
 				y = server->Recv(buf, sizeof(buf));
-				printf("%s\n",buf);
-			}
-			fclose (file);
-		}
-		//while (true)//бесконечный цикл
-		//{
-		//	file = fopen("D:\\newinfo.txt","a");//если его нет, перед открытием newinfo.txt создается 
-		//	char buf[2];
-		//	int r = server->Recv(buf, 2);
-		//	if (r <= 0)//если нет данных
-		//	{
-		//		puts("0 bytes");
-		//		printf("%dError: \n", WSAGetLastError());
-		//		server->CloseServer();
-		//		break;
-		//	}
-		//	fwrite(buf,1,r,file);
-		//	//WriteFile(file, buf, r, NULL, NULL);// указатель на файл, буфер, из которого берутся данные, байт для записи, указатель на количество записанных байт 
-		//	//передача ответа после приема 
-		//	//printf("\n%s \n",buf);
-		//	printf("receive bytes: %d, part: %d\n\n",r,i);
-		//	server->Send("ready", 6*sizeof(char));
-		//	i++;
-		//	fclose (file);
-		//}
-		server->CloseServer();
+				if(y > 0)
+				{
+					printf("%s\n",buf);
+				}
+				else
+				{
+					fclose (file);
+					server->CloseServer();
+					break;
+				}
+			}			
+		}		
 	}
 	getch();
 	return 0;
