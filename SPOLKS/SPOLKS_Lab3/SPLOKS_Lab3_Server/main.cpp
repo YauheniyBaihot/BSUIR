@@ -28,7 +28,7 @@ int main(int argc, char** argv)
 
 		if(file != NULL)
 		{			
-			char buf[1024];//для приема сообщений сервера	
+			char buf[1024];//пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ	
 
 			char *FileName = new char[100];
 			char *Extension = new char[5];
@@ -44,10 +44,10 @@ int main(int argc, char** argv)
 			server->Recv(buf, sizeof(buf));
 			fseek(file, atoi(buf), SEEK_SET);
 
-			while(!feof(file)) //пока не конец файла, передаем частями файл (сколько помещается в буфере)
+			while(!feof(file)) //пїЅпїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ (пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅ пїЅпїЅпїЅпїЅпїЅпїЅ)
 			{
 				char bufer[2];
-				if(KeyPressed(VK_UP))
+				if(KeyPressed(VK_UP)) //if else structure for lab 4
 				{
 					int result=send(server->ClientSocket,"AA",2,0);
 					printf("send out of band data");
@@ -55,8 +55,8 @@ int main(int argc, char** argv)
 				}	
 				else
 				{
-					symbols=fread(bufer,1,2,file);//в буфер один раз считывается sizeof(bufer) бит из файла, возвращает число символов
-					size=ftell(file);//функция возвращает текущую позицию
+					symbols=fread(bufer,1,2,file);//пїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅ пїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ sizeof(bufer) пїЅпїЅпїЅ пїЅпїЅ пїЅпїЅпїЅпїЅпїЅ, пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ
+					size=ftell(file);//пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ пїЅпїЅпїЅпїЅпїЅпїЅпїЅ
 					//printf("\n%s \n",bufer);
 					printf("read symbols: %d, part: %d, pos: %ld \n",symbols,i,size);
 					printf("\n");
