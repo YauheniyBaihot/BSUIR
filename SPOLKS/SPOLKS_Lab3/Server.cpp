@@ -59,12 +59,12 @@ int main(int argc, char** argv)
 	{
 		return 0;
 	}
+	printf("Server start\n");
 	while(true)
 	{
 		int symbols;	
 		char* Log = new char[100];
-		SOCKET ClientSocket;	
-		printf("Server start\n");
+		SOCKET ClientSocket;			
 		StartServer(&ClientSocket, argv[1], argv[2], Log);
 		char *FilePath = argv[3];
 		FILE *file;
