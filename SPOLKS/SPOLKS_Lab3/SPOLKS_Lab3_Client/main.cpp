@@ -49,35 +49,72 @@ int main(int argc, char** argv)
 
 		while(true)
 		{
-
-			file = fopen(FileNameBufer, "ab");//если его нет, перед открытием newinfo.txt создается 
 			char buf[2];
+			int r = 0;
 
-			int r = client->Recv(buf, 2);
-			if (r <= 0)//если нет данных
+			fd_set fdread,fdOOB;
+			BOOL isOOB = false;
+			FD_ZERO(&fdread);
+			FD_ZERO(&fdOOB);
+			// 'remoteSocket' is the socket that you check in this sample.
+			FD_SET(client->Listener, &fdread);
+			FD_SET(client->Listener, &fdOOB);
+
+
+			/*u_long Mode = 0;
+			bool vv = ioctlsocket(client->Listener, SIOCATMARK, &Mode);
+			if(vv)
 			{
-				
-				puts("0 bytes");
-				printf("%dError: \n", WSAGetLastError());
-				client->CloseClient();
-				fclose(file);
-
-				if(FileLength != BytesCount)
-				{
-					WriteCountOfSendedBytesToLogFile(BytesCount);					
-				}
-
-				break;
+			char c[512];
+			int nbytes = recv(client->Listener, c, 1,MSG_OOB);
+			printf("oob data %d", nbytes);
+			}*/
+			int err = 0;
+			if((err=select(0,&fdread,0,&fdOOB,0))==SOCKET_ERROR)
+			{
+				printf("select() failed: %d\n",WSAGetLastError());
+				return 0;
 			}
-			fwrite(buf,1,r,file);
+			else
+			{
+				if(FD_ISSET(client->Listener,&fdOOB))
+				{
+					r=recv(client->Listener,(char *)&buf,2,MSG_OOB);
+					printf("\n I receive the OOB data, NUM IS %d\n",r);
+					client->Send("ready", 6*sizeof(char));            
+				} 
+				else
+				{
+					file = fopen(FileNameBufer, "ab");//если его нет, перед открытием newinfo.txt создается 
 
-			BytesCount += r;
+
+					r = client->Recv(buf, 2);
+					if (r <= 0)//если нет данных
+					{
+
+						puts("0 bytes");
+						printf("%dError: \n", WSAGetLastError());
+						client->CloseClient();
+						fclose(file);
+
+						if(FileLength != BytesCount)
+						{
+							WriteCountOfSendedBytesToLogFile(BytesCount);					
+						}
+
+						break;
+					}
+					fwrite(buf,1,r,file);
+
+					BytesCount += r;
 
 
-			printf("receive bytes: %d, part: %d\n\n",r,i);
-			client->Send("ready", 6*sizeof(char));
-			i++;
-			fclose (file);
+					printf("receive bytes: %d, part: %d\n\n",r,i);
+					client->Send("ready", 6*sizeof(char));
+					i++;
+					fclose (file);
+				}
+			}
 
 		}
 	}

@@ -28,7 +28,7 @@ int main(int argc, char** argv)
 
 		if(file != NULL)
 		{			
-			char buf[1024];//��� ������ ��������� �������	
+			char buf[1024];
 
 			char *FileName = new char[100];
 			char *Extension = new char[5];
@@ -44,25 +44,26 @@ int main(int argc, char** argv)
 			server->Recv(buf, sizeof(buf));
 			fseek(file, atoi(buf), SEEK_SET);
 
-			while(!feof(file)) //���� �� ����� �����, �������� ������� ���� (������� ���������� � ������)
+			while(!feof(file)) 
 			{
 				char bufer[2];
-				if(KeyPressed(VK_UP)) //if else structure for lab 4
+				if(KeyPressed(VK_UP))
 				{
-					int result=send(server->ClientSocket,"AA",2,0);
+					int result=send(server->ClientSocket,"A",1,MSG_OOB);
 					printf("send out of band data");
-					Sleep(500);
+					//Sleep(500);
 				}	
 				else
 				{
-					symbols=fread(bufer,1,2,file);//� ����� ���� ��� ����������� sizeof(bufer) ��� �� �����, ���������� ����� ��������
-					size=ftell(file);//������� ���������� ������� �������
+					symbols=fread(bufer,1,2,file);
+					size=ftell(file);
 					//printf("\n%s \n",bufer);
 					printf("read symbols: %d, part: %d, pos: %ld \n",symbols,i,size);
 					printf("\n");
-					//if(symbols!=0)					
+					//if(symbols!=0)		
+					//send(server->ClientSocket, bufer, symbols, MSG_OOB);
 					server->Send(bufer, symbols);
-					Sleep(500);
+					//Sleep(500);
 					i++;
 				}
 
