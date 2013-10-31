@@ -10,73 +10,53 @@ using namespace std;
 #include "SocketHelper.h"
 
 int StartServer(SOCKET *ClientSocket, char* IpAddress, char* Port, char* Log);
+void SendFileName(char *FilePath, SOCKET ClientSocket);
+int SendFileLength(FILE *file, SOCKET ClientSocket);
 bool KeyPressed(int key);
 
 int main(int argc, char** argv)
 {
+	if(argc < 4)
+	{
+		return 0;
+	}
 	while(true)
 	{
-		int y, i=1, symbols, size;	
+		int symbols;	
 		char* Log = new char[100];
-		SOCKET ClientSocket;		
-		StartServer(&ClientSocket, "127.0.0.1", "1200", Log);
-
-		char *FilePath = "D:\\for_send.txt";
+		SOCKET ClientSocket;	
+		printf("Server start\n");
+		StartServer(&ClientSocket, argv[1], argv[2], Log);
+		char *FilePath = argv[3];
 		FILE *file;
 		file = fopen(FilePath,"r");
-
-
 		if(file != NULL)
 		{			
-			char buf[1024];
-
-			char *FileName = new char[100];
-			char *Extension = new char[5];
-			_splitpath(FilePath, new char[1], new char[200], FileName, Extension);
-			strcat(FileName, Extension);
-			strcat(FileName, "#");
-			send(ClientSocket, FileName, strlen(FileName) + 1, 0);
-			recv(ClientSocket, buf, sizeof(buf), 0);
-
-
-			char *FileLength = new char[15];
-			itoa(filelength(fileno(file)), FileLength, 10);		
-			send(ClientSocket, FileLength, strlen(FileLength), 0);
-			recv(ClientSocket, buf, sizeof(buf), 0);
-			fseek(file, atoi(buf), SEEK_SET);
-
+			SendFileName(FilePath, ClientSocket);			
+			fseek(file, SendFileLength(file, ClientSocket), SEEK_SET);
+			printf("Start sending\n");
 			while(!feof(file)) 
-			{
+			{				
+				char buf[1024];
 				char bufer[2];
 				if(KeyPressed(VK_UP))
 				{
-					int result=send(ClientSocket,"~",1,MSG_OOB);
-					printf("send out of band data");
-					//Sleep(500);
+					int result = send(ClientSocket, "~", 1, MSG_OOB);
+					printf("Send out of band data\n");
 				}	
 				else
 				{
-					symbols=fread(bufer,1,2,file);
-					size=ftell(file);
-					//printf("\n%s \n",bufer);
-					printf("read symbols: %d, part: %d, pos: %ld \n",symbols,i,size);
-					printf("\n");	
+					symbols = fread(bufer, 1, 2, file);
 					send(ClientSocket, bufer, symbols, 0);
-					//Sleep(500);
-					i++;
 				}
-				y = recv(ClientSocket, buf, sizeof(buf), 0);
-				if(y > 0)
-				{
-					printf("%s\n",buf);
-				}
-				else
+				if(recv(ClientSocket, buf, sizeof(buf), 0) <= 0)
 				{					
 					break;
 				}							
 			}	
-			fclose (file);
+			fclose(file);
 			SocketHelper::CloseSocket(ClientSocket);
+			printf("Connection Closed\n");
 		}		
 	}
 	getch();
@@ -87,7 +67,7 @@ int StartServer(SOCKET *ClientSocket, char* IpAddress, char* Port, char* Log)
 {
 	SOCKET Listener;
 	sockaddr_in ListenerName;
-	int Result = SocketHelper::InitializeSocket(&Listener, &ListenerName, INADDR_ANY, htons(4003), Log);
+	int Result = SocketHelper::InitializeSocket(&Listener, &ListenerName, inet_addr(IpAddress), htons(atoi(Port)), Log);
 	if(!Result)
 	{
 		int Answer = bind(Listener, (const sockaddr*)&ListenerName, sizeof(ListenerName));
@@ -105,6 +85,28 @@ int StartServer(SOCKET *ClientSocket, char* IpAddress, char* Port, char* Log)
 		*ClientSocket = accept(Listener, NULL, NULL);
 	}
 	return Result;
+}
+
+void SendFileName(char *FilePath, SOCKET ClientSocket)
+{
+	char buf[1024];
+	char *FileName = new char[100];
+	char *Extension = new char[5];
+	_splitpath(FilePath, new char[1], new char[200], FileName, Extension);
+	strcat(FileName, Extension);
+	strcat(FileName, "#");
+	send(ClientSocket, FileName, strlen(FileName) + 1, 0);
+	recv(ClientSocket, buf, sizeof(buf), 0);
+}
+
+int SendFileLength(FILE *file, SOCKET ClientSocket)
+{
+	char buf[1024];
+	char *FileLength = new char[15];
+	itoa(filelength(fileno(file)), FileLength, 10);		
+	send(ClientSocket, FileLength, strlen(FileLength), 0);
+	recv(ClientSocket, buf, sizeof(buf), 0);
+	return atoi(buf);
 }
 
 bool KeyPressed(int key)
