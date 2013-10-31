@@ -7,8 +7,9 @@
 #include <iostream>
 #include <fstream>
 using namespace std;
-#include "Server.h"
+#include "SocketHelper.h"
 
+int StartServer(SOCKET *ClientSocket, char* IpAddress, char* Port, char* Log);
 bool KeyPressed(int key);
 
 int main(int argc, char** argv)
@@ -16,10 +17,9 @@ int main(int argc, char** argv)
 	while(true)
 	{
 		int y, i=1, symbols, size;	
-
-		Server *server = new Server();
 		char* Log = new char[100];
-		server->StartServer("127.0.0.1", "1200", Log);
+		SOCKET ClientSocket;		
+		StartServer(&ClientSocket, "127.0.0.1", "1200", Log);
 
 		char *FilePath = "D:\\for_send.txt";
 		FILE *file;
@@ -35,13 +35,14 @@ int main(int argc, char** argv)
 			_splitpath(FilePath, new char[1], new char[200], FileName, Extension);
 			strcat(FileName, Extension);
 			strcat(FileName, "#");
-			server->Send(FileName, strlen(FileName) + 1);
-			server->Recv(buf, sizeof(buf));
+			send(ClientSocket, FileName, strlen(FileName) + 1, 0);
+			recv(ClientSocket, buf, sizeof(buf), 0);
+
 
 			char *FileLength = new char[15];
-			itoa(filelength(fileno(file)), FileLength, 10);					
-			server->Send(FileLength, strlen(FileLength));
-			server->Recv(buf, sizeof(buf));
+			itoa(filelength(fileno(file)), FileLength, 10);		
+			send(ClientSocket, FileLength, strlen(FileLength), 0);
+			recv(ClientSocket, buf, sizeof(buf), 0);
 			fseek(file, atoi(buf), SEEK_SET);
 
 			while(!feof(file)) 
@@ -49,7 +50,7 @@ int main(int argc, char** argv)
 				char bufer[2];
 				if(KeyPressed(VK_UP))
 				{
-					int result=send(server->ClientSocket,"A",1,MSG_OOB);
+					int result=send(ClientSocket,"~",1,MSG_OOB);
 					printf("send out of band data");
 					//Sleep(500);
 				}	
@@ -59,15 +60,12 @@ int main(int argc, char** argv)
 					size=ftell(file);
 					//printf("\n%s \n",bufer);
 					printf("read symbols: %d, part: %d, pos: %ld \n",symbols,i,size);
-					printf("\n");
-					//if(symbols!=0)		
-					//send(server->ClientSocket, bufer, symbols, MSG_OOB);
-					server->Send(bufer, symbols);
+					printf("\n");	
+					send(ClientSocket, bufer, symbols, 0);
 					//Sleep(500);
 					i++;
 				}
-
-				y = server->Recv(buf, sizeof(buf));
+				y = recv(ClientSocket, buf, sizeof(buf), 0);
 				if(y > 0)
 				{
 					printf("%s\n",buf);
@@ -78,11 +76,35 @@ int main(int argc, char** argv)
 				}							
 			}	
 			fclose (file);
-			server->CloseServer();
+			SocketHelper::CloseSocket(ClientSocket);
 		}		
 	}
 	getch();
 	return 0;
+}
+
+int StartServer(SOCKET *ClientSocket, char* IpAddress, char* Port, char* Log)
+{
+	SOCKET Listener;
+	sockaddr_in ListenerName;
+	int Result = SocketHelper::InitializeSocket(&Listener, &ListenerName, INADDR_ANY, htons(4003), Log);
+	if(!Result)
+	{
+		int Answer = bind(Listener, (const sockaddr*)&ListenerName, sizeof(ListenerName));
+		if (Answer != 0)
+		{
+			strcpy(Log, "Failed to bind socket\n");
+			return 0;
+		}
+		Answer = listen(Listener,SOMAXCONN);
+		if (Answer != 0)
+		{
+			strcpy(Log, "Failed to put socket into listening state\n");
+			return 0;
+		}
+		*ClientSocket = accept(Listener, NULL, NULL);
+	}
+	return Result;
 }
 
 bool KeyPressed(int key)

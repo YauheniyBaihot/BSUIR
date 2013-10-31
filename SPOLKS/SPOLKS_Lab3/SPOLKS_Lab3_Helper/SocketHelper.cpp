@@ -33,15 +33,3 @@ void SocketHelper::CloseSocket(SOCKET Socket)
 	shutdown(Socket, 2);
 	WSACleanup();
 }
-
-
-int SocketHelper::Recv(SOCKET Socket, char* Buffer, int Symbols)
-{
-	return recv(Socket, Buffer, Symbols, 0);
-}
-
-
-void SocketHelper::Send(SOCKET Socket, char* Buffer, int Symbols)
-{
-	send(Socket, Buffer, Symbols, 0);
-}
