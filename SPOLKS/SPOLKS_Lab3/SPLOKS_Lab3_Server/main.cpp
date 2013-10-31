@@ -24,6 +24,7 @@ int main(int argc, char** argv)
 	while(true)
 	{
 		int symbols;	
+		int BytesCount = 0, FileLength = 0;
 		char* Log = new char[100];
 		SOCKET ClientSocket;			
 		StartServer(&ClientSocket, argv[1], argv[2], Log);
@@ -32,10 +33,11 @@ int main(int argc, char** argv)
 		file = fopen(FilePath,"r");
 		if(file != NULL)
 		{			
-			SendFileName(FilePath, ClientSocket);			
-			fseek(file, SendFileLength(file, ClientSocket), SEEK_SET);
+			SendFileName(FilePath, ClientSocket);	
+			FileLength = SendFileLength(file, ClientSocket);
+			fseek(file, FileLength, SEEK_SET);
 			printf("Start sending\n");
-			while(!feof(file)) 
+			while(BytesCount != FileLength) 
 			{				
 				char buf[1024];
 				char bufer[2];
@@ -48,6 +50,7 @@ int main(int argc, char** argv)
 				{
 					symbols = fread(bufer, 1, 2, file);
 					send(ClientSocket, bufer, symbols, 0);
+					BytesCount += symbols;
 				}
 				if(recv(ClientSocket, buf, sizeof(buf), 0) <= 0)
 				{					
