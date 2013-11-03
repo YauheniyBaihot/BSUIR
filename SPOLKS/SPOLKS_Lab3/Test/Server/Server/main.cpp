@@ -10,7 +10,7 @@ using namespace std;
 
 int StartServer(SOCKET *ClientSocket, char* IpAddress, char* Port, char* Log);
 void SendFileName(char *FilePath, SOCKET ClientSocket);
-int SendFileLength(FILE *file, SOCKET ClientSocket);
+int SendFileLength(FILE *file, SOCKET ClientSocket, int *FileLength);
 bool KeyPressed(int key);
 
 class SocketHelper
@@ -63,6 +63,7 @@ int main(int argc, char** argv)
 	while(true)
 	{
 		int symbols;	
+		int BytesCount = 0, FileLength = 0;
 		char* Log = new char[100];
 		SOCKET ClientSocket;			
 		StartServer(&ClientSocket, argv[1], argv[2], Log);
@@ -71,13 +72,13 @@ int main(int argc, char** argv)
 		file = fopen(FilePath,"r");
 		if(file != NULL)
 		{			
-			SendFileName(FilePath, ClientSocket);			
-			fseek(file, SendFileLength(file, ClientSocket), SEEK_SET);
+			SendFileName(FilePath, ClientSocket);	
+			fseek(file, SendFileLength(file, ClientSocket, &FileLength), SEEK_SET);
 			printf("Start sending\n");
-			while(!feof(file)) 
+			while(BytesCount != FileLength) 
 			{				
-				char buf[1024];
-				char bufer[2];
+				char buf[6];
+				char bufer[1024];
 				if(KeyPressed(VK_UP))
 				{
 					int result = send(ClientSocket, "~", 1, MSG_OOB);
@@ -85,9 +86,11 @@ int main(int argc, char** argv)
 				}	
 				else
 				{
-					symbols = fread(bufer, 1, 2, file);
+					symbols = fread(bufer, 1, 1024, file);
 					send(ClientSocket, bufer, symbols, 0);
+					BytesCount += symbols;
 				}
+				Sleep(10);
 				if(recv(ClientSocket, buf, sizeof(buf), 0) <= 0)
 				{					
 					break;
@@ -138,12 +141,13 @@ void SendFileName(char *FilePath, SOCKET ClientSocket)
 	recv(ClientSocket, buf, sizeof(buf), 0);
 }
 
-int SendFileLength(FILE *file, SOCKET ClientSocket)
+int SendFileLength(FILE *file, SOCKET ClientSocket, int *FileLength)
 {
 	char buf[1024];
-	char *FileLength = new char[15];
-	itoa(filelength(fileno(file)), FileLength, 10);		
-	send(ClientSocket, FileLength, strlen(FileLength), 0);
+	char *FileLen = new char[15];
+	*FileLength = filelength(fileno(file));
+	itoa(*FileLength, FileLen, 10);		
+	send(ClientSocket, FileLen, strlen(FileLen), 0);
 	recv(ClientSocket, buf, sizeof(buf), 0);
 	return atoi(buf);
 }

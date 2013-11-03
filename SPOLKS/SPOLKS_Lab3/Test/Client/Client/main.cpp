@@ -72,7 +72,7 @@ int main(int argc, char** argv)
 		int FileLength = GetFileLength(Listener, &BytesCount);
 		while(true)
 		{
-			char buf[2];
+			char buf[1024];
 			int Response = 0;
 			fd_set fdread,fdOOB;
 			BOOL isOOB = false;
@@ -99,7 +99,7 @@ int main(int argc, char** argv)
 				else
 				{
 					file = fopen(FileName, "ab");
-					Response = recv(Listener, buf, 2, 0);
+					Response = recv(Listener, buf, 1024, 0);
 					if (Response <= 0)
 					{
 						printf("Connection Closed\n");
@@ -113,6 +113,7 @@ int main(int argc, char** argv)
 					}
 					fwrite(buf, 1, Response, file);
 					BytesCount += Response;
+					Sleep(10);
 					send(Listener, "ready", 6 * sizeof(char), 0);
 					fclose (file);
 				}
