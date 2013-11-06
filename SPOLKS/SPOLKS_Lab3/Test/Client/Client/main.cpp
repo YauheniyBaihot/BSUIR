@@ -9,8 +9,9 @@
 using namespace std;
 
 int StartClient(SOCKET *Listener, char* IpAddress, char* Port, char* Log);
-char *GetFileName(SOCKET Listener);
-int GetFileLength(SOCKET Listener, int *BytesCount);
+void SendFileName(char *FilePath, SOCKET ClientSocket);
+void SendFileLengthAndStartPosition(FILE *file, SOCKET Socket, int *FileLength, int *BytesCount);
+bool KeyPressed(int key);
 int ReadCountOfSendedBytesFromLogFile();
 void WriteCountOfSendedBytesToLogFile(int BytesCount);
 
@@ -60,65 +61,58 @@ int main(int argc, char** argv)
 	{
 		return 0;
 	}
-	int BytesCount = 0; 
 	char* Log = new char[100];
 	FILE *file;
 	SOCKET Listener;
 	if(!StartClient(&Listener, argv[1], argv[2], Log))
 	{
 		printf("Connected to %s %s\n", argv[1], argv[2]);	
-		char FileName[106];
-		strcpy(FileName, GetFileName(Listener));
-		int FileLength = GetFileLength(Listener, &BytesCount);
-		while(true)
+		int symbols;	
+		int BytesCount = 0, FileLength = 0;
+		char *FilePath = argv[3];
+		FILE *file;
+		file = fopen(FilePath,"rb");
+		if(file != NULL)
 		{
-			char buf[1024];
-			int Response = 0;
-			fd_set fdread,fdOOB;
-			BOOL isOOB = false;
-			FD_ZERO(&fdread);
-			FD_ZERO(&fdOOB);
-			FD_SET(Listener, &fdread);
-			FD_SET(Listener, &fdOOB);
-			if(select(0, &fdread, 0, &fdOOB, 0) == SOCKET_ERROR)
+			SendFileName(FilePath, Listener);
+			SendFileLengthAndStartPosition(file, Listener, &FileLength, &BytesCount);
+			if(BytesCount)
 			{
-				printf("select() failed: %d\n",WSAGetLastError());
-				return 0;
+				fseek(file, BytesCount, SEEK_SET);
 			}
-			else
-			{
-				if(FD_ISSET(Listener,&fdOOB))
+			printf("Start sending\n");
+			while(BytesCount != FileLength) 
+			{				
+				char buf[6];
+				char bufer[1000];
+				if(KeyPressed(VK_UP))
 				{
-					char bbb[1];
-					if(recv(Listener, bbb, 1, MSG_OOB) > 0)
-					{
-						printf("Bytes Count: %d\n", BytesCount);
-					}
-					send(Listener, "ready", 6 * sizeof(char), 0);     
-				} 
+					int result = send(Listener, "~", 1, MSG_OOB);
+					printf("Send out of band data\n");
+					if(recv(Listener, buf, sizeof(buf), 0) <= 0)
+					{					
+						break;
+					}	
+				}	
 				else
 				{
-					file = fopen(FileName, "ab");
-					Response = recv(Listener, buf, 1024, 0);
-					if (Response <= 0)
-					{
-						printf("Connection Closed\n");
-						SocketHelper::CloseSocket(Listener);
-						fclose(file);
-						if(FileLength > BytesCount)
-						{
-							WriteCountOfSendedBytesToLogFile(BytesCount);					
-						}
+					symbols = fread(bufer, 1, 1000, file);
+					send(Listener, bufer, symbols, 0);
+					if(recv(Listener, buf, sizeof(buf), 0) <= 0)
+					{					
 						break;
-					}
-					fwrite(buf, 1, Response, file);
-					BytesCount += Response;
-					Sleep(10);
-					send(Listener, "ready", 6 * sizeof(char), 0);
-					fclose (file);
-				}
+					}	
+					BytesCount += symbols;
+				}								
+			}	
+			fclose(file);
+			SocketHelper::CloseSocket(Listener);
+			printf("Connection Closed\n");
+			if(FileLength > BytesCount)
+			{
+				WriteCountOfSendedBytesToLogFile(BytesCount);					
 			}
-		}
+		}		
 	}
 	getch();
 	return 0;
@@ -140,32 +134,31 @@ int StartClient(SOCKET *Listener, char* IpAddress, char* Port, char* Log)
 	return Result;
 }
 
-char *GetFileName(SOCKET Listener)
+void SendFileName(char *FilePath, SOCKET Socket)
 {
-	char FileNameBufer[106];
-	recv(Listener, FileNameBufer, 106, 0);
-	string FileName(FileNameBufer);
-	FileNameBufer[FileName.find_last_of('#', 105)] = '\0';
-	send(Listener, "ready", 6 * sizeof(char), 0);
-	return FileNameBufer;
+	char buf[1024];
+	char *FileName = new char[100];
+	char *Extension = new char[5];
+	_splitpath(FilePath, new char[1], new char[200], FileName, Extension);
+	strcat(FileName, Extension);
+	strcat(FileName, "#");
+	send(Socket, FileName, strlen(FileName) + 1, 0);
+	recv(Socket, buf, sizeof(buf), 0);
 }
 
-int GetFileLength(SOCKET Listener, int *BytesCount)
+void SendFileLengthAndStartPosition(FILE *file, SOCKET Socket, int *FileLength, int *BytesCount)
 {
-	char FileLengthBufer[15];
-	recv(Listener, FileLengthBufer, 15, 0);
+	char buf[1024];
+	char *bufer = new char[15];
+	*FileLength = filelength(fileno(file));
+	itoa(*FileLength, bufer, 10);		
+	send(Socket, bufer, strlen(bufer), 0);
+	recv(Socket, buf, sizeof(buf), 0);
 	*BytesCount = ReadCountOfSendedBytesFromLogFile();
-	if(*BytesCount != 0)
-	{
-		char *bufer = new char[15];
-		itoa(*BytesCount, bufer, 10);
-		send(Listener, bufer, strlen(bufer) * sizeof(char), 0);
-	}
-	else
-	{
-		send(Listener, "ready", 6 * sizeof(char), 0);
-	}
-	return atoi(FileLengthBufer);
+	bufer = new char[15];
+	itoa(*BytesCount, bufer, 10);
+	send(Socket, bufer, strlen(bufer) * sizeof(char), 0);
+	recv(Socket, buf, sizeof(buf), 0);
 }
 
 int ReadCountOfSendedBytesFromLogFile()
@@ -182,4 +175,9 @@ void WriteCountOfSendedBytesToLogFile(int BytesCount)
 	ofstream File("log.txt", ios::trunc);
 	File << BytesCount;	
 	File.close();
+}
+
+bool KeyPressed(int key)
+{
+	return (GetAsyncKeyState(key) & 0x8000 != 0);
 }

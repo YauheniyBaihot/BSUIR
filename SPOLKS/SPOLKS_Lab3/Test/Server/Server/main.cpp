@@ -9,9 +9,8 @@
 using namespace std;
 
 int StartServer(SOCKET *ClientSocket, char* IpAddress, char* Port, char* Log);
-void SendFileName(char *FilePath, SOCKET ClientSocket);
-int SendFileLength(FILE *file, SOCKET ClientSocket, int *FileLength);
-bool KeyPressed(int key);
+char *GetFileName(SOCKET Listener);
+void GetFileLengthAndStartPosition(SOCKET Listener, int *FileLength, int *BytesCount);
 
 class SocketHelper
 {
@@ -55,51 +54,65 @@ void SocketHelper::CloseSocket(SOCKET Socket)
 
 int main(int argc, char** argv)
 {
-	if(argc < 4)
+	if(argc < 3)
 	{
 		return 0;
 	}
 	printf("Server start\n");
 	while(true)
-	{
-		int symbols;	
-		int BytesCount = 0, FileLength = 0;
+	{		
 		char* Log = new char[100];
 		SOCKET ClientSocket;			
 		StartServer(&ClientSocket, argv[1], argv[2], Log);
-		char *FilePath = argv[3];
-		FILE *file;
-		file = fopen(FilePath,"r");
-		if(file != NULL)
-		{			
-			SendFileName(FilePath, ClientSocket);	
-			fseek(file, SendFileLength(file, ClientSocket, &FileLength), SEEK_SET);
-			printf("Start sending\n");
-			while(BytesCount != FileLength) 
-			{				
-				char buf[6];
-				char bufer[1024];
-				if(KeyPressed(VK_UP))
+		char FileName[106];
+		strcpy(FileName, GetFileName(ClientSocket));
+		int BytesCount = 0, FileLength = 0;
+		GetFileLengthAndStartPosition(ClientSocket, &FileLength, &BytesCount);
+		while(true)
+		{
+			FILE *file;
+			char bufer[1000];
+			int Response = 0;
+			fd_set fdread,fdOOB;
+			BOOL isOOB = false;
+			FD_ZERO(&fdread);
+			FD_ZERO(&fdOOB);
+			FD_SET(ClientSocket, &fdread);
+			FD_SET(ClientSocket, &fdOOB);
+			if(select(0, &fdread, 0, &fdOOB, 0) == SOCKET_ERROR)
+			{
+				printf("select() failed: %d\n",WSAGetLastError());
+				return 0;
+			}
+			else
+			{
+				if(FD_ISSET(ClientSocket, &fdOOB))
 				{
-					int result = send(ClientSocket, "~", 1, MSG_OOB);
-					printf("Send out of band data\n");
-				}	
+					char bbb[1];
+					if(recv(ClientSocket, bbb, 1, MSG_OOB) > 0)
+					{
+						printf("Bytes Count: %d\n", BytesCount);
+					}
+					send(ClientSocket, "ready", 6 * sizeof(char), 0);     
+				} 
 				else
 				{
-					symbols = fread(bufer, 1, 1024, file);
-					send(ClientSocket, bufer, symbols, 0);
-					BytesCount += symbols;
+					file = fopen(FileName, "ab");
+					Response = recv(ClientSocket, bufer, 1000, 0);
+					if (Response <= 0)
+					{
+						printf("Connection Closed\n");
+						SocketHelper::CloseSocket(ClientSocket);
+						fclose(file);
+						break;
+					}
+					fwrite(bufer, 1, Response, file);
+					BytesCount += Response;
+					send(ClientSocket, "ready", 6 * sizeof(char), 0);
+					fclose (file);
 				}
-				Sleep(10);
-				if(recv(ClientSocket, buf, sizeof(buf), 0) <= 0)
-				{					
-					break;
-				}							
-			}	
-			fclose(file);
-			SocketHelper::CloseSocket(ClientSocket);
-			printf("Connection Closed\n");
-		}		
+			}
+		}
 	}
 	getch();
 	return 0;
@@ -129,30 +142,24 @@ int StartServer(SOCKET *ClientSocket, char* IpAddress, char* Port, char* Log)
 	return Result;
 }
 
-void SendFileName(char *FilePath, SOCKET ClientSocket)
+char *GetFileName(SOCKET Listener)
 {
-	char buf[1024];
-	char *FileName = new char[100];
-	char *Extension = new char[5];
-	_splitpath(FilePath, new char[1], new char[200], FileName, Extension);
-	strcat(FileName, Extension);
-	strcat(FileName, "#");
-	send(ClientSocket, FileName, strlen(FileName) + 1, 0);
-	recv(ClientSocket, buf, sizeof(buf), 0);
+	char FileNameBufer[106];
+	recv(Listener, FileNameBufer, 106, 0);
+	string FileName(FileNameBufer);
+	FileNameBufer[FileName.find_last_of('#', 105)] = '\0';
+	send(Listener, "ready", 6 * sizeof(char), 0);
+	return FileNameBufer;
 }
 
-int SendFileLength(FILE *file, SOCKET ClientSocket, int *FileLength)
+void GetFileLengthAndStartPosition(SOCKET Listener, int *FileLength, int *BytesCount)
 {
-	char buf[1024];
-	char *FileLen = new char[15];
-	*FileLength = filelength(fileno(file));
-	itoa(*FileLength, FileLen, 10);		
-	send(ClientSocket, FileLen, strlen(FileLen), 0);
-	recv(ClientSocket, buf, sizeof(buf), 0);
-	return atoi(buf);
-}
-
-bool KeyPressed(int key)
-{
-	return (GetAsyncKeyState(key) & 0x8000 != 0);
+	char *bufer = new char[15];
+	recv(Listener, bufer, 15, 0);
+	*FileLength = atoi(bufer);
+	send(Listener, "ready", 6 * sizeof(char), 0);
+	bufer = new char[15];
+	recv(Listener, bufer, 15, 0);
+	*BytesCount = atoi(bufer);
+	send(Listener, "ready", 6 * sizeof(char), 0);	
 }
