@@ -8,19 +8,20 @@
 #include <fstream>
 using namespace std;
 
-int StartServer(SOCKET *ClientSocket, char* IpAddress, char* Port, char* Log);
+int StartServer(SOCKET *ClientSocket, int SocketType, char* IpAddress, char* Port, char* Log);
 char *GetFileName(SOCKET Listener);
 void GetFileLengthAndStartPosition(SOCKET Listener, int *FileLength, int *BytesCount);
+DWORD RunTCPServer(LPVOID ThreadParam);
 
 class SocketHelper
 {
 
 public:
-	static __declspec(dllexport) int InitializeSocket(SOCKET *Listener, sockaddr_in *ListenerName, ULONG IPAddress, USHORT Port, char* Log);
+	static __declspec(dllexport) int InitializeSocket(SOCKET *Listener, sockaddr_in *ListenerName, int SocketType, ULONG IPAddress, USHORT Port, char* Log);
 	static __declspec(dllexport) void CloseSocket(SOCKET Socket);
 };
 
-int SocketHelper::InitializeSocket(SOCKET *Socket, sockaddr_in *SocketAddress, ULONG IPAddress, USHORT Port, char* Log)
+int SocketHelper::InitializeSocket(SOCKET *Socket, sockaddr_in *SocketAddress, int SocketType, ULONG IPAddress, USHORT Port, char* Log)
 {
 	WSADATA WsaData;
 	int WSAStartupReturnValue = WSAStartup( MAKEWORD( 2, 2 ), &WsaData );
@@ -34,7 +35,7 @@ int SocketHelper::InitializeSocket(SOCKET *Socket, sockaddr_in *SocketAddress, U
 		strcpy(Log, "Wsock32.dll of wrong version\n");
 		return 2; 
 	}
-	*Socket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+	*Socket = socket(AF_INET, SocketType, IPPROTO_TCP);
 	if (*Socket == 0)
 	{
 		strcpy(Log, "Failed to create socket\n");
@@ -53,17 +54,20 @@ void SocketHelper::CloseSocket(SOCKET Socket)
 }
 
 int main(int argc, char** argv)
-{
+{	
 	if(argc < 3)
 	{
 		return 0;
 	}
+	/*int Id = 0;
+	DWORD ThreadId;
+	CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)&RunTCPServer, (LPVOID)&Id, 0, &ThreadId); */
 	printf("Server start\n");
 	while(true)
 	{		
 		char* Log = new char[100];
 		SOCKET ClientSocket;			
-		StartServer(&ClientSocket, argv[1], argv[2], Log);
+		StartServer(&ClientSocket, SOCK_STREAM, argv[1], argv[2], Log);
 		char FileName[106];
 		strcpy(FileName, GetFileName(ClientSocket));
 		int BytesCount = 0, FileLength = 0;
@@ -71,7 +75,7 @@ int main(int argc, char** argv)
 		while(true)
 		{
 			FILE *file;
-			char bufer[1000];
+			char bufer[1000000];
 			int Response = 0;
 			fd_set fdread,fdOOB;
 			BOOL isOOB = false;
@@ -98,7 +102,7 @@ int main(int argc, char** argv)
 				else
 				{
 					file = fopen(FileName, "ab");
-					Response = recv(ClientSocket, bufer, 1000, 0);
+					Response = recv(ClientSocket, bufer, 1000000, 0);
 					if (Response <= 0)
 					{
 						printf("Connection Closed\n");
@@ -118,11 +122,11 @@ int main(int argc, char** argv)
 	return 0;
 }
 
-int StartServer(SOCKET *ClientSocket, char* IpAddress, char* Port, char* Log)
+int StartServer(SOCKET *ClientSocket, int SocketType, char* IpAddress, char* Port, char* Log)
 {
 	SOCKET Listener;
 	sockaddr_in ListenerName;
-	int Result = SocketHelper::InitializeSocket(&Listener, &ListenerName, inet_addr(IpAddress), htons(atoi(Port)), Log);
+	int Result = SocketHelper::InitializeSocket(&Listener, &ListenerName, SocketType, inet_addr(IpAddress), htons(atoi(Port)), Log);
 	if(!Result)
 	{
 		int Answer = bind(Listener, (const sockaddr*)&ListenerName, sizeof(ListenerName));
