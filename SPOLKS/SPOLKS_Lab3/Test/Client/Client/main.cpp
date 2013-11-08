@@ -12,11 +12,15 @@ using namespace std;
 void RunTCPClient(char** argv);
 void RunUDPClient(char** argv);
 int StartClient(SOCKET *Listener, int SocketType, char* IpAddress, char* Port, char* Log);
-void SendFileName(char *FilePath, SOCKET ClientSocket);
-void SendFileLengthAndStartPosition(FILE *file, SOCKET Socket, int *FileLength, int *BytesCount);
-bool KeyPressed(int key);
+void SendFileNameByTCP(char *FilePath, SOCKET ClientSocket);
+void SendFileNameByUDP(char *FilePath, SOCKET ClientSocket, sockaddr_in* Server, int* Server_Length);
+void SendFileLengthAndStartPositionByTCP(FILE *file, SOCKET Socket, int *FileLength, int *BytesCount);
+void SendFileLengthAndStartPositionByUDP(FILE *file, SOCKET Socket, int *FileLength, int *BytesCount, sockaddr_in* Server, int* Server_Length);
 int ReadCountOfSendedBytesFromLogFile();
 void WriteCountOfSendedBytesToLogFile(int BytesCount);
+bool KeyPressed(int key);
+
+#ifndef SocketHelper
 
 class SocketHelper
 {
@@ -44,7 +48,7 @@ int SocketHelper::InitializeSocket(SOCKET *Socket, sockaddr_in *SocketAddress, i
 		strcpy(Log, "Wsock32.dll of wrong version\n");
 		return 2; 
 	}
-	*Socket = socket(AF_INET, SocketType, IPPROTO_TCP);
+	*Socket = socket(AF_INET, SocketType, 0);
 	if (*Socket == 0)
 	{
 		strcpy(Log, "Failed to create socket\n");
@@ -99,9 +103,11 @@ string SocketHelper::CmdArgumentsToLine(int argc, char **argv, char *type)
 	return Temp;
 }
 
+#endif
+
 int main(int argc, char** argv)
 {
-	if(argc == 4)
+	/*if(argc == 4)
 	{
 		SocketHelper::RunProcesses(argc, argv, L"..\\Debug\\Client.exe");
 	}
@@ -113,17 +119,18 @@ int main(int argc, char** argv)
 			if(!strcmp(argv[4], "TCP"))
 			{
 				RunTCPClient(argv);
+				return 0;
 			}
 			else
-			{
+			{*/
 				if(!strcmp(argv[4], "UDP"))
 				{
 					RunUDPClient(argv);
 				}
-			}
+			/*}
 			getch();
 		}
-	}
+	}*/
 	return 0;
 }
 
@@ -142,8 +149,8 @@ void RunTCPClient(char** argv)
 		file = fopen(FilePath,"rb");
 		if(file != NULL)
 		{
-			SendFileName(FilePath, Listener);
-			SendFileLengthAndStartPosition(file, Listener, &FileLength, &BytesCount);
+			SendFileNameByTCP(FilePath, Listener);
+			SendFileLengthAndStartPositionByTCP(file, Listener, &FileLength, &BytesCount);
 			if(BytesCount)
 			{
 				fseek(file, BytesCount, SEEK_SET);
@@ -191,7 +198,54 @@ void RunTCPClient(char** argv)
 
 void RunUDPClient(char** argv)
 {
-
+	char* Log = new char[100];
+	FILE *file;
+	SOCKET Listener;
+	if(!StartClient(&Listener, SOCK_DGRAM, argv[1], argv[2], Log))
+	{
+		struct sockaddr_in Server;
+		int Server_Length = (int)sizeof(struct sockaddr_in);
+		printf("Connected to %s %s\n", argv[1], argv[2]);	
+		int symbols;	
+		int BytesCount = 0, FileLength = 0;
+		char *FilePath = argv[3];
+		FILE *file;
+		file = fopen(FilePath,"rb");
+		if(file != NULL)
+		{
+			SendFileNameByUDP(FilePath, Listener, &Server, &Server_Length);
+			SendFileLengthAndStartPositionByUDP(file, Listener, &FileLength, &BytesCount, &Server, &Server_Length);
+			if(BytesCount)
+			{
+				fseek(file, BytesCount, SEEK_SET);
+			}
+			printf("Start sending\n");
+			while(BytesCount != FileLength) 
+			{				
+				char buf[6];
+				char bufer[1000000];
+				symbols = fread(bufer, 1, 1000000, file);
+				sendto(Listener, bufer, symbols, 0, (struct sockaddr *)&Server, Server_Length);
+				if(recvfrom(Listener, buf, sizeof(buf), 0, (struct sockaddr *)&Server, &Server_Length) <= 0)
+				{					
+					break;
+				}	
+				BytesCount += symbols;
+			}	
+			Sleep(1000);
+			fclose(file);
+			SocketHelper::CloseSocket(Listener);
+			printf("Connection Closed\n");
+			if(FileLength > BytesCount)
+			{
+				WriteCountOfSendedBytesToLogFile(BytesCount);					
+			}
+			else
+			{
+				WriteCountOfSendedBytesToLogFile(0);
+			}
+		}		
+	}
 }
 
 int StartClient(SOCKET *Listener, int SocketType, char* IpAddress, char* Port, char* Log)
@@ -210,7 +264,7 @@ int StartClient(SOCKET *Listener, int SocketType, char* IpAddress, char* Port, c
 	return Result;
 }
 
-void SendFileName(char *FilePath, SOCKET Socket)
+void SendFileNameByTCP(char *FilePath, SOCKET Socket)
 {
 	char buf[1024];
 	char *FileName = new char[100];
@@ -222,7 +276,19 @@ void SendFileName(char *FilePath, SOCKET Socket)
 	recv(Socket, buf, sizeof(buf), 0);
 }
 
-void SendFileLengthAndStartPosition(FILE *file, SOCKET Socket, int *FileLength, int *BytesCount)
+void SendFileNameByUDP(char *FilePath, SOCKET Socket, sockaddr_in* Server, int* Server_Length)
+{
+	char buf[1024];
+	char *FileName = new char[100];
+	char *Extension = new char[5];
+	_splitpath(FilePath, new char[1], new char[200], FileName, Extension);
+	strcat(FileName, Extension);
+	strcat(FileName, "#");
+	sendto(Socket, FileName, strlen(FileName) + 1, 0, (struct sockaddr *)Server, *Server_Length);
+	recvfrom(Socket, buf, sizeof(buf), 0, (struct sockaddr *)Server, Server_Length);
+}
+
+void SendFileLengthAndStartPositionByTCP(FILE *file, SOCKET Socket, int *FileLength, int *BytesCount)
 {
 	char buf[1024];
 	char *bufer = new char[15];
@@ -235,6 +301,21 @@ void SendFileLengthAndStartPosition(FILE *file, SOCKET Socket, int *FileLength, 
 	itoa(*BytesCount, bufer, 10);
 	send(Socket, bufer, strlen(bufer) * sizeof(char), 0);
 	recv(Socket, buf, sizeof(buf), 0);
+}
+
+void SendFileLengthAndStartPositionByUDP(FILE *file, SOCKET Socket, int *FileLength, int *BytesCount, sockaddr_in* Server, int* Server_Length)
+{
+	char buf[1024];
+	char *bufer = new char[15];
+	*FileLength = filelength(fileno(file));
+	itoa(*FileLength, bufer, 10);		
+	sendto(Socket, bufer, strlen(bufer), 0, (struct sockaddr *)Server, *Server_Length);
+	recvfrom(Socket, buf, sizeof(buf), 0, (struct sockaddr *)Server, Server_Length);
+	*BytesCount = ReadCountOfSendedBytesFromLogFile();
+	bufer = new char[15];
+	itoa(*BytesCount, bufer, 10);
+	sendto(Socket, bufer, strlen(bufer) * sizeof(char), 0, (struct sockaddr *)Server, *Server_Length);
+	recvfrom(Socket, buf, sizeof(buf), 0, (struct sockaddr *)Server, Server_Length);
 }
 
 int ReadCountOfSendedBytesFromLogFile()

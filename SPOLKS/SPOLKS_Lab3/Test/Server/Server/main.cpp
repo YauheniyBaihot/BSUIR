@@ -11,9 +11,14 @@ using namespace std;
 
 void RunTCPServer(char** argv);
 void RunUDPServer(char** argv);
-int StartServer(SOCKET *ClientSocket, int SocketType, char* IpAddress, char* Port, char* Log);
-char *GetFileName(SOCKET Listener);
-void GetFileLengthAndStartPosition(SOCKET Listener, int *FileLength, int *BytesCount);
+int StartTCPServer(SOCKET *ClientSocket, char* IpAddress, char* Port, char* Log);
+int StartUDPServer(SOCKET *ClientSocket, char* IpAddress, char* Port, char* Log);
+char *GetFileNameByTCP(SOCKET Listener);
+char *GetFileNameByUDP(SOCKET Listener, sockaddr_in* Client, int* Client_Length);
+void GetFileLengthAndStartPositionByTCP(SOCKET Listener, int *FileLength, int *BytesCount);
+void GetFileLengthAndStartPositionByUDP(SOCKET Listener, int *FileLength, int *BytesCount, sockaddr_in* Client, int* Client_Length);
+
+#ifndef SocketHelper
 
 class SocketHelper
 {
@@ -41,7 +46,7 @@ int SocketHelper::InitializeSocket(SOCKET *Socket, sockaddr_in *SocketAddress, i
 		strcpy(Log, "Wsock32.dll of wrong version\n");
 		return 2; 
 	}
-	*Socket = socket(AF_INET, SocketType, IPPROTO_TCP);
+	*Socket = socket(AF_INET, SocketType, 0);
 	if (*Socket == 0)
 	{
 		strcpy(Log, "Failed to create socket\n");
@@ -96,9 +101,11 @@ string SocketHelper::CmdArgumentsToLine(int argc, char **argv, char *type)
 	return Temp;
 }
 
+#endif
+
 int main(int argc, char** argv)
 {	
-	if(argc == 3)
+	/*if(argc == 3)
 	{
 		SocketHelper::RunProcesses(argc, argv, L"..\\Debug\\Server.exe");
 	}
@@ -112,15 +119,15 @@ int main(int argc, char** argv)
 				RunTCPServer(argv);
 			}
 			else
-			{
+			{*/
 				if(!strcmp(argv[3], "UDP"))
 				{					
 					RunUDPServer(argv);
 				}
-			}
+			/*}
 			getch();
 		}
-	}
+	}*/
 	return 0;
 }
 
@@ -130,11 +137,11 @@ void RunTCPServer(char** argv)
 	{		
 		char* Log = new char[100];
 		SOCKET ClientSocket;			
-		StartServer(&ClientSocket, SOCK_STREAM, argv[1], argv[2], Log);
+		StartTCPServer(&ClientSocket, argv[1], argv[2], Log);
 		char FileName[106];
-		strcpy(FileName, GetFileName(ClientSocket));
+		strcpy(FileName, GetFileNameByTCP(ClientSocket));
 		int BytesCount = 0, FileLength = 0;
-		GetFileLengthAndStartPosition(ClientSocket, &FileLength, &BytesCount);
+		GetFileLengthAndStartPositionByTCP(ClientSocket, &FileLength, &BytesCount);
 		while(true)
 		{
 			FILE *file;
@@ -185,23 +192,54 @@ void RunTCPServer(char** argv)
 
 void RunUDPServer(char** argv)
 {
-
+	while(true)
+	{		
+		struct sockaddr_in Client;
+		int Client_Length = (int)sizeof(struct sockaddr_in);
+		char* Log = new char[100];
+		SOCKET ClientSocket;				
+		StartUDPServer(&ClientSocket, argv[1], argv[2], Log);
+		char FileName[106];
+		strcpy(FileName, GetFileNameByUDP(ClientSocket, &Client, &Client_Length));
+		int BytesCount = 0, FileLength = 0;
+		GetFileLengthAndStartPositionByUDP(ClientSocket, &FileLength, &BytesCount, &Client, &Client_Length);
+		while(true)
+		{
+			FILE *file;
+			char bufer[1000000];
+			int Response = 0;
+			
+			file = fopen(FileName, "ab");
+			Response = recvfrom(ClientSocket, bufer, 1000000, 0, (struct sockaddr *)&Client, &Client_Length);
+			if (Response <= 0)
+			{
+				printf("Connection Closed\n");
+				SocketHelper::CloseSocket(ClientSocket);
+				fclose(file);
+				break;
+			}
+			fwrite(bufer, 1, Response, file);
+			BytesCount += Response;
+			sendto(ClientSocket, "ready", 6 * sizeof(char), 0, (struct sockaddr *)&Client, Client_Length);
+			fclose (file);
+		}
+	}
 }
 
-int StartServer(SOCKET *ClientSocket, int SocketType, char* IpAddress, char* Port, char* Log)
+int StartTCPServer(SOCKET *ClientSocket, char* IpAddress, char* Port, char* Log)
 {
 	SOCKET Listener;
 	sockaddr_in ListenerName;
-	int Result = SocketHelper::InitializeSocket(&Listener, &ListenerName, SocketType, inet_addr(IpAddress), htons(atoi(Port)), Log);
+	int Result = SocketHelper::InitializeSocket(&Listener, &ListenerName, SOCK_STREAM, inet_addr(IpAddress), htons(atoi(Port)), Log);
 	if(!Result)
 	{
-		int Answer = bind(Listener, (const sockaddr*)&ListenerName, sizeof(ListenerName));
+		int Answer = bind(Listener, (const sockaddr*)&ListenerName, sizeof(ListenerName));		
 		if (Answer != 0)
 		{
 			strcpy(Log, "Failed to bind socket\n");
 			return 0;
 		}
-		Answer = listen(Listener,SOMAXCONN);
+		Answer = listen(Listener, SOMAXCONN);
 		if (Answer != 0)
 		{
 			strcpy(Log, "Failed to put socket into listening state\n");
@@ -212,7 +250,25 @@ int StartServer(SOCKET *ClientSocket, int SocketType, char* IpAddress, char* Por
 	return Result;
 }
 
-char *GetFileName(SOCKET Listener)
+int StartUDPServer(SOCKET *ClientSocket, char* IpAddress, char* Port, char* Log)
+{
+	SOCKET Listener;
+	sockaddr_in ListenerName;	
+	int Result = SocketHelper::InitializeSocket(&Listener, &ListenerName, SOCK_DGRAM, inet_addr(IpAddress), htons(atoi(Port)), Log);	
+	if(!Result)
+	{
+		int Answer = bind(Listener, (const sockaddr*)&ListenerName, sizeof(ListenerName));	
+		if (Answer != 0)
+		{
+			strcpy(Log, "Failed to bind socket\n");
+			return 0;
+		}			
+		*ClientSocket = Listener;		
+	}			
+	return Result;
+}
+
+char *GetFileNameByTCP(SOCKET Listener)
 {
 	char FileNameBufer[106];
 	recv(Listener, FileNameBufer, 106, 0);
@@ -222,7 +278,17 @@ char *GetFileName(SOCKET Listener)
 	return FileNameBufer;
 }
 
-void GetFileLengthAndStartPosition(SOCKET Listener, int *FileLength, int *BytesCount)
+char *GetFileNameByUDP(SOCKET Listener, sockaddr_in* Client, int* Client_Length)
+{
+	char FileNameBufer[106];
+	recvfrom(Listener, FileNameBufer, 106, 0, (struct sockaddr *)Client, Client_Length);
+	string FileName(FileNameBufer);
+	FileNameBufer[FileName.find_last_of('#', 105)] = '\0';
+	sendto(Listener, "ready", 6 * sizeof(char), 0, (struct sockaddr *)Client, *Client_Length);
+	return FileNameBufer;
+}
+
+void GetFileLengthAndStartPositionByTCP(SOCKET Listener, int *FileLength, int *BytesCount)
 {
 	char *bufer = new char[15];
 	recv(Listener, bufer, 15, 0);
@@ -232,4 +298,16 @@ void GetFileLengthAndStartPosition(SOCKET Listener, int *FileLength, int *BytesC
 	recv(Listener, bufer, 15, 0);
 	*BytesCount = atoi(bufer);
 	send(Listener, "ready", 6 * sizeof(char), 0);	
+}
+
+void GetFileLengthAndStartPositionByUDP(SOCKET Listener, int *FileLength, int *BytesCount, sockaddr_in* Client, int* Client_Length)
+{
+	char *bufer = new char[15];
+	recvfrom(Listener, bufer, 15, 0, (struct sockaddr *)Client, Client_Length);
+	*FileLength = atoi(bufer);
+	sendto(Listener, "ready", 6 * sizeof(char), 0, (struct sockaddr *)Client, *Client_Length);
+	bufer = new char[15];
+	recvfrom(Listener, bufer, 15, 0, (struct sockaddr *)Client, Client_Length);
+	*BytesCount = atoi(bufer);
+	sendto(Listener, "ready", 6 * sizeof(char), 0, (struct sockaddr *)Client, *Client_Length);	
 }
