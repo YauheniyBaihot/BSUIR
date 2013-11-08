@@ -3,11 +3,14 @@
 #include <stdio.h>
 #include <conio.h>
 #include <io.h>
-#include <string>
-#include <fstream>
 #include <iostream>
+#include <fstream>
+#include <string>
+#include <algorithm>
 using namespace std;
 
+void RunTCPClient(char** argv);
+void RunUDPClient(char** argv);
 int StartClient(SOCKET *Listener, int SocketType, char* IpAddress, char* Port, char* Log);
 void SendFileName(char *FilePath, SOCKET ClientSocket);
 void SendFileLengthAndStartPosition(FILE *file, SOCKET Socket, int *FileLength, int *BytesCount);
@@ -21,6 +24,10 @@ class SocketHelper
 public:
 	static __declspec(dllexport) int InitializeSocket(SOCKET *Listener, sockaddr_in *ListenerName, int SocketType, ULONG IPAddress, USHORT Port, char* Log);
 	static __declspec(dllexport) void CloseSocket(SOCKET Socket);
+	static __declspec(dllexport) void RunProcesses(int argc, char** argv, LPWSTR ProcessPath);
+	static __declspec(dllexport) void RunCreateProcessFunction(int argc, char** argv, char* type, LPWSTR ProcessPath);
+	static __declspec(dllexport) string CmdArgumentsToLine(int argc, char **argv, char *type);
+	static __declspec(dllexport) void string_to_wstring(const std::string& src, std::wstring& dest);
 };
 
 int SocketHelper::InitializeSocket(SOCKET *Socket, sockaddr_in *SocketAddress, int SocketType, ULONG IPAddress, USHORT Port, char* Log)
@@ -55,12 +62,73 @@ void SocketHelper::CloseSocket(SOCKET Socket)
 	WSACleanup();
 }
 
+void SocketHelper::RunProcesses(int argc, char** argv, LPWSTR ProcessPath)
+{
+	RunCreateProcessFunction(argc, argv, "TCP", ProcessPath);
+	RunCreateProcessFunction(argc, argv, "UDP", ProcessPath);
+}
+
+void SocketHelper::RunCreateProcessFunction(int argc, char** argv, char* type, LPWSTR ProcessPath)
+{
+	STARTUPINFO SI;
+	ZeroMemory(&SI, sizeof(STARTUPINFO));
+	PROCESS_INFORMATION PI;
+	string Src = SocketHelper::CmdArgumentsToLine(argc, argv, type);
+	wstring Dest;
+	string_to_wstring(Src, Dest);
+	CreateProcess(ProcessPath, (LPWSTR)Dest.c_str(), NULL, NULL, FALSE, NULL, NULL, NULL, &SI, &PI);
+}
+
+void SocketHelper::string_to_wstring(const std::string& src, std::wstring& dest)
+{
+	std::wstring tmp;
+	tmp.resize(src.size());
+	std::transform(src.begin(),src.end(),tmp.begin(),btowc);
+	tmp.swap(dest);
+}
+
+string SocketHelper::CmdArgumentsToLine(int argc, char **argv, char *type)
+{
+	string Temp;
+	for(int i = 0; i < argc; i++)
+	{		
+		Temp.append(argv[i]);
+		Temp.append(" ");
+	}	
+	Temp.append(type);
+	return Temp;
+}
+
 int main(int argc, char** argv)
 {
-	if(argc < 3)
+	if(argc == 4)
 	{
-		return 0;
+		SocketHelper::RunProcesses(argc, argv, L"..\\Debug\\Client.exe");
 	}
+	else
+	{
+		if(argc == 5)
+		{
+			printf("%s Client start\n", argv[4]);
+			if(!strcmp(argv[4], "TCP"))
+			{
+				RunTCPClient(argv);
+			}
+			else
+			{
+				if(!strcmp(argv[4], "UDP"))
+				{
+					RunUDPClient(argv);
+				}
+			}
+			getch();
+		}
+	}
+	return 0;
+}
+
+void RunTCPClient(char** argv)
+{
 	char* Log = new char[100];
 	FILE *file;
 	SOCKET Listener;
@@ -119,8 +187,11 @@ int main(int argc, char** argv)
 			}
 		}		
 	}
-	getch();
-	return 0;
+}
+
+void RunUDPClient(char** argv)
+{
+
 }
 
 int StartClient(SOCKET *Listener, int SocketType, char* IpAddress, char* Port, char* Log)

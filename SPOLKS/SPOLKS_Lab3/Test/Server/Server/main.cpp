@@ -3,17 +3,17 @@
 #include <stdio.h>
 #include <conio.h>
 #include <io.h>
-#include <string>
 #include <iostream>
 #include <fstream>
 #include <string>
 #include <algorithm>
 using namespace std;
 
+void RunTCPServer(char** argv);
+void RunUDPServer(char** argv);
 int StartServer(SOCKET *ClientSocket, int SocketType, char* IpAddress, char* Port, char* Log);
 char *GetFileName(SOCKET Listener);
 void GetFileLengthAndStartPosition(SOCKET Listener, int *FileLength, int *BytesCount);
-DWORD RunTCPServer(LPVOID ThreadParam);
 
 class SocketHelper
 {
@@ -21,6 +21,8 @@ class SocketHelper
 public:
 	static __declspec(dllexport) int InitializeSocket(SOCKET *Listener, sockaddr_in *ListenerName, int SocketType, ULONG IPAddress, USHORT Port, char* Log);
 	static __declspec(dllexport) void CloseSocket(SOCKET Socket);
+	static __declspec(dllexport) void RunProcesses(int argc, char** argv, LPWSTR ProcessPath);
+	static __declspec(dllexport) void RunCreateProcessFunction(int argc, char** argv, char* type, LPWSTR ProcessPath);
 	static __declspec(dllexport) string CmdArgumentsToLine(int argc, char **argv, char *type);
 	static __declspec(dllexport) void string_to_wstring(const std::string& src, std::wstring& dest);
 };
@@ -57,12 +59,29 @@ void SocketHelper::CloseSocket(SOCKET Socket)
 	WSACleanup();
 }
 
+void SocketHelper::RunProcesses(int argc, char** argv, LPWSTR ProcessPath)
+{
+	RunCreateProcessFunction(argc, argv, "TCP", ProcessPath);
+	RunCreateProcessFunction(argc, argv, "UDP", ProcessPath);
+}
+
+void SocketHelper::RunCreateProcessFunction(int argc, char** argv, char* type, LPWSTR ProcessPath)
+{
+	STARTUPINFO SI;
+	ZeroMemory(&SI, sizeof(STARTUPINFO));
+	PROCESS_INFORMATION PI;
+	string Src = SocketHelper::CmdArgumentsToLine(argc, argv, type);
+	wstring Dest;
+	string_to_wstring(Src, Dest);
+	CreateProcess(ProcessPath, (LPWSTR)Dest.c_str(), NULL, NULL, FALSE, NULL, NULL, NULL, &SI, &PI);
+}
+
 void SocketHelper::string_to_wstring(const std::string& src, std::wstring& dest)
 {
-    std::wstring tmp;
-    tmp.resize(src.size());
-    std::transform(src.begin(),src.end(),tmp.begin(),btowc);
-    tmp.swap(dest);
+	std::wstring tmp;
+	tmp.resize(src.size());
+	std::transform(src.begin(),src.end(),tmp.begin(),btowc);
+	tmp.swap(dest);
 }
 
 string SocketHelper::CmdArgumentsToLine(int argc, char **argv, char *type)
@@ -79,27 +98,34 @@ string SocketHelper::CmdArgumentsToLine(int argc, char **argv, char *type)
 
 int main(int argc, char** argv)
 {	
-	printf("%d",argc);
-	if(argc < 3)
-	{
-		return 0;
-	}	
 	if(argc == 3)
 	{
-		STARTUPINFO cif;
-		ZeroMemory(&cif, sizeof(STARTUPINFO));
-		PROCESS_INFORMATION pi;
-		string Src = SocketHelper::CmdArgumentsToLine(argc, argv, "UDP");
-		wstring Dest;
-		SocketHelper::string_to_wstring(Src, Dest);
-		CreateProcess(L"..\\Debug\\Server.exe", (LPWSTR)Dest.c_str(), NULL, NULL, FALSE, NULL, NULL, NULL, &cif, &pi);
-		getch();
+		SocketHelper::RunProcesses(argc, argv, L"..\\Debug\\Server.exe");
+	}
+	else
+	{
+		if(argc == 4)
+		{
+			printf("%s Server start\n", argv[3]);
+			if(!strcmp(argv[3], "TCP"))
+			{
+				RunTCPServer(argv);
+			}
+			else
+			{
+				if(!strcmp(argv[3], "UDP"))
+				{					
+					RunUDPServer(argv);
+				}
+			}
+			getch();
+		}
 	}
 	return 0;
-	/*int Id = 0;
-	DWORD ThreadId;
-	CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)&RunTCPServer, (LPVOID)&Id, 0, &ThreadId); */
-	printf("Server start\n");
+}
+
+void RunTCPServer(char** argv)
+{	
 	while(true)
 	{		
 		char* Log = new char[100];
@@ -123,7 +149,7 @@ int main(int argc, char** argv)
 			if(select(0, &fdread, 0, &fdOOB, 0) == SOCKET_ERROR)
 			{
 				printf("select() failed: %d\n",WSAGetLastError());
-				return 0;
+				return;
 			}
 			else
 			{
@@ -155,8 +181,11 @@ int main(int argc, char** argv)
 			}
 		}
 	}
-	getch();
-	return 0;
+}
+
+void RunUDPServer(char** argv)
+{
+
 }
 
 int StartServer(SOCKET *ClientSocket, int SocketType, char* IpAddress, char* Port, char* Log)
