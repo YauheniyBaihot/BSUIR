@@ -6,6 +6,8 @@
 #include <string>
 #include <iostream>
 #include <fstream>
+#include <string>
+#include <algorithm>
 using namespace std;
 
 int StartServer(SOCKET *ClientSocket, int SocketType, char* IpAddress, char* Port, char* Log);
@@ -19,6 +21,8 @@ class SocketHelper
 public:
 	static __declspec(dllexport) int InitializeSocket(SOCKET *Listener, sockaddr_in *ListenerName, int SocketType, ULONG IPAddress, USHORT Port, char* Log);
 	static __declspec(dllexport) void CloseSocket(SOCKET Socket);
+	static __declspec(dllexport) string CmdArgumentsToLine(int argc, char **argv, char *type);
+	static __declspec(dllexport) void string_to_wstring(const std::string& src, std::wstring& dest);
 };
 
 int SocketHelper::InitializeSocket(SOCKET *Socket, sockaddr_in *SocketAddress, int SocketType, ULONG IPAddress, USHORT Port, char* Log)
@@ -53,12 +57,45 @@ void SocketHelper::CloseSocket(SOCKET Socket)
 	WSACleanup();
 }
 
+void SocketHelper::string_to_wstring(const std::string& src, std::wstring& dest)
+{
+    std::wstring tmp;
+    tmp.resize(src.size());
+    std::transform(src.begin(),src.end(),tmp.begin(),btowc);
+    tmp.swap(dest);
+}
+
+string SocketHelper::CmdArgumentsToLine(int argc, char **argv, char *type)
+{
+	string Temp;
+	for(int i = 0; i < argc; i++)
+	{		
+		Temp.append(argv[i]);
+		Temp.append(" ");
+	}	
+	Temp.append(type);
+	return Temp;
+}
+
 int main(int argc, char** argv)
 {	
+	printf("%d",argc);
 	if(argc < 3)
 	{
 		return 0;
+	}	
+	if(argc == 3)
+	{
+		STARTUPINFO cif;
+		ZeroMemory(&cif, sizeof(STARTUPINFO));
+		PROCESS_INFORMATION pi;
+		string Src = SocketHelper::CmdArgumentsToLine(argc, argv, "UDP");
+		wstring Dest;
+		SocketHelper::string_to_wstring(Src, Dest);
+		CreateProcess(L"..\\Debug\\Server.exe", (LPWSTR)Dest.c_str(), NULL, NULL, FALSE, NULL, NULL, NULL, &cif, &pi);
+		getch();
 	}
+	return 0;
 	/*int Id = 0;
 	DWORD ThreadId;
 	CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE)&RunTCPServer, (LPVOID)&Id, 0, &ThreadId); */
