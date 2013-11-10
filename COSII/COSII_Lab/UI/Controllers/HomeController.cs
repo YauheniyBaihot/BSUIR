@@ -98,5 +98,29 @@ namespace UI.Controllers
         }
 
         #endregion
+
+        #region Lab3
+
+        public ActionResult Lab3()
+        {
+            return View();
+        }
+
+        public JsonResult GetWalshOriginalFunction()
+        {
+            return Json(Lab3Results.OriginalFunction);
+        }
+
+        public JsonResult GetWalshTransformFunction()
+        {
+            return Json(Lab3Results.WalshTransformFunction);
+        }
+
+        public JsonResult GetBackWalshTransformFunction()
+        {
+            return Json(Lab3Results.BackWalshTransformFunction);
+        }
+
+        #endregion
     }
 }

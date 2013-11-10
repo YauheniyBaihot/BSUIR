@@ -1,5 +1,8 @@
-﻿@model UI.Models.Counter
+﻿@{
+    ViewBag.Title = "Lab2";
+}
 
+<script src="~/Scripts/chartsLab2.js"></script>
 <script type="text/javascript">
     var dataSource = [];
     var series = [];
@@ -14,18 +17,6 @@
     });
 </script>
 
-<nav class="top-bar top-bar-padding">
-    <section class="top-bar-section">
-        @*<ul class="title-area">
-            <li class="name">
-                <h1><a href="#">DFT Count: @Model.DFTCount</a></h1>
-            </li>
-            <li class="name">
-                <h1><a href="#">FFT Count: @Model.FFTCount</a></h1>
-            </li>
-        </ul>*@
-    </section>
-</nav>
 <div class="content">
     <div class="pane">
         <div class="long-title">
