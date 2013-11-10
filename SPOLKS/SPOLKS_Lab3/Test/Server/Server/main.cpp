@@ -93,10 +93,10 @@ string SocketHelper::CmdArgumentsToLine(int argc, char **argv, char *type)
 {
 	string Temp;
 	for(int i = 0; i < argc; i++)
-	{		
+	{                
 		Temp.append(argv[i]);
 		Temp.append(" ");
-	}	
+	}        
 	Temp.append(type);
 	return Temp;
 }
@@ -104,8 +104,8 @@ string SocketHelper::CmdArgumentsToLine(int argc, char **argv, char *type)
 #endif
 
 int main(int argc, char** argv)
-{	
-	/*if(argc == 3)
+{        
+	if(argc == 3)
 	{
 		SocketHelper::RunProcesses(argc, argv, L"..\\Debug\\Server.exe");
 	}
@@ -119,24 +119,24 @@ int main(int argc, char** argv)
 				RunTCPServer(argv);
 			}
 			else
-			{*/
+			{
 				if(!strcmp(argv[3], "UDP"))
-				{					
+				{                                        
 					RunUDPServer(argv);
 				}
-			/*}
+			}
 			getch();
 		}
-	}*/
+	}
 	return 0;
 }
 
 void RunTCPServer(char** argv)
-{	
+{        
 	while(true)
-	{		
+	{                
 		char* Log = new char[100];
-		SOCKET ClientSocket;			
+		SOCKET ClientSocket;                        
 		StartTCPServer(&ClientSocket, argv[1], argv[2], Log);
 		char FileName[106];
 		strcpy(FileName, GetFileNameByTCP(ClientSocket));
@@ -145,7 +145,7 @@ void RunTCPServer(char** argv)
 		while(true)
 		{
 			FILE *file;
-			char bufer[1000000];
+			char bufer[1000];
 			int Response = 0;
 			fd_set fdread,fdOOB;
 			BOOL isOOB = false;
@@ -164,7 +164,7 @@ void RunTCPServer(char** argv)
 				{
 					char bbb[1];
 					if(recv(ClientSocket, bbb, 1, MSG_OOB) > 0)
-					{
+					{   
 						printf("Bytes Count: %d\n", BytesCount);
 					}
 					send(ClientSocket, "ready", 6 * sizeof(char), 0);     
@@ -172,7 +172,7 @@ void RunTCPServer(char** argv)
 				else
 				{
 					file = fopen(FileName, "ab");
-					Response = recv(ClientSocket, bufer, 1000000, 0);
+					Response = recv(ClientSocket, bufer, 1000, 0);
 					if (Response <= 0)
 					{
 						printf("Connection Closed\n");
@@ -193,11 +193,11 @@ void RunTCPServer(char** argv)
 void RunUDPServer(char** argv)
 {
 	while(true)
-	{		
+	{                
 		struct sockaddr_in Client;
 		int Client_Length = (int)sizeof(struct sockaddr_in);
 		char* Log = new char[100];
-		SOCKET ClientSocket;				
+		SOCKET ClientSocket;                                
 		StartUDPServer(&ClientSocket, argv[1], argv[2], Log);
 		char FileName[106];
 		strcpy(FileName, GetFileNameByUDP(ClientSocket, &Client, &Client_Length));
@@ -206,11 +206,11 @@ void RunUDPServer(char** argv)
 		while(true)
 		{
 			FILE *file;
-			char bufer[1000000];
+			char bufer[1000];
 			int Response = 0;
-			
+
 			file = fopen(FileName, "ab");
-			Response = recvfrom(ClientSocket, bufer, 1000000, 0, (struct sockaddr *)&Client, &Client_Length);
+			Response = recvfrom(ClientSocket, bufer, 1000, 0, (struct sockaddr *)&Client, &Client_Length);
 			if (Response <= 0)
 			{
 				printf("Connection Closed\n");
@@ -233,7 +233,7 @@ int StartTCPServer(SOCKET *ClientSocket, char* IpAddress, char* Port, char* Log)
 	int Result = SocketHelper::InitializeSocket(&Listener, &ListenerName, SOCK_STREAM, inet_addr(IpAddress), htons(atoi(Port)), Log);
 	if(!Result)
 	{
-		int Answer = bind(Listener, (const sockaddr*)&ListenerName, sizeof(ListenerName));		
+		int Answer = bind(Listener, (const sockaddr*)&ListenerName, sizeof(ListenerName));                
 		if (Answer != 0)
 		{
 			strcpy(Log, "Failed to bind socket\n");
@@ -253,18 +253,18 @@ int StartTCPServer(SOCKET *ClientSocket, char* IpAddress, char* Port, char* Log)
 int StartUDPServer(SOCKET *ClientSocket, char* IpAddress, char* Port, char* Log)
 {
 	SOCKET Listener;
-	sockaddr_in ListenerName;	
-	int Result = SocketHelper::InitializeSocket(&Listener, &ListenerName, SOCK_DGRAM, inet_addr(IpAddress), htons(atoi(Port)), Log);	
+	sockaddr_in ListenerName;        
+	int Result = SocketHelper::InitializeSocket(&Listener, &ListenerName, SOCK_DGRAM, inet_addr(IpAddress), htons(atoi(Port)), Log);        
 	if(!Result)
 	{
-		int Answer = bind(Listener, (const sockaddr*)&ListenerName, sizeof(ListenerName));	
+		int Answer = bind(Listener, (const sockaddr*)&ListenerName, sizeof(ListenerName));        
 		if (Answer != 0)
 		{
 			strcpy(Log, "Failed to bind socket\n");
 			return 0;
-		}			
-		*ClientSocket = Listener;		
-	}			
+		}                        
+		*ClientSocket = Listener;                
+	}                        
 	return Result;
 }
 
@@ -297,7 +297,7 @@ void GetFileLengthAndStartPositionByTCP(SOCKET Listener, int *FileLength, int *B
 	bufer = new char[15];
 	recv(Listener, bufer, 15, 0);
 	*BytesCount = atoi(bufer);
-	send(Listener, "ready", 6 * sizeof(char), 0);	
+	send(Listener, "ready", 6 * sizeof(char), 0);        
 }
 
 void GetFileLengthAndStartPositionByUDP(SOCKET Listener, int *FileLength, int *BytesCount, sockaddr_in* Client, int* Client_Length)
@@ -309,5 +309,5 @@ void GetFileLengthAndStartPositionByUDP(SOCKET Listener, int *FileLength, int *B
 	bufer = new char[15];
 	recvfrom(Listener, bufer, 15, 0, (struct sockaddr *)Client, Client_Length);
 	*BytesCount = atoi(bufer);
-	sendto(Listener, "ready", 6 * sizeof(char), 0, (struct sockaddr *)Client, *Client_Length);	
+	sendto(Listener, "ready", 6 * sizeof(char), 0, (struct sockaddr *)Client, *Client_Length);        
 }

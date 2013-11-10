@@ -9,13 +9,10 @@
 #include <algorithm>
 using namespace std;
 
-void RunTCPClient(char** argv);
-void RunUDPClient(char** argv);
+void RunClient(char** argv, int SocketType);
 int StartClient(SOCKET *Listener, int SocketType, char* IpAddress, char* Port, char* Log);
-void SendFileNameByTCP(char *FilePath, SOCKET ClientSocket);
-void SendFileNameByUDP(char *FilePath, SOCKET ClientSocket, sockaddr_in* Server, int* Server_Length);
-void SendFileLengthAndStartPositionByTCP(FILE *file, SOCKET Socket, int *FileLength, int *BytesCount);
-void SendFileLengthAndStartPositionByUDP(FILE *file, SOCKET Socket, int *FileLength, int *BytesCount, sockaddr_in* Server, int* Server_Length);
+void SendFileName(char *FilePath, SOCKET ClientSocket);
+void SendFileLengthAndStartPosition(FILE *file, SOCKET Socket, int *FileLength, int *BytesCount);
 int ReadCountOfSendedBytesFromLogFile();
 void WriteCountOfSendedBytesToLogFile(int BytesCount);
 bool KeyPressed(int key);
@@ -95,10 +92,10 @@ string SocketHelper::CmdArgumentsToLine(int argc, char **argv, char *type)
 {
 	string Temp;
 	for(int i = 0; i < argc; i++)
-	{		
+	{                
 		Temp.append(argv[i]);
 		Temp.append(" ");
-	}	
+	}        
 	Temp.append(type);
 	return Temp;
 }
@@ -107,7 +104,7 @@ string SocketHelper::CmdArgumentsToLine(int argc, char **argv, char *type)
 
 int main(int argc, char** argv)
 {
-	/*if(argc == 4)
+	if(argc == 4)
 	{
 		SocketHelper::RunProcesses(argc, argv, L"..\\Debug\\Client.exe");
 	}
@@ -118,133 +115,81 @@ int main(int argc, char** argv)
 			printf("%s Client start\n", argv[4]);
 			if(!strcmp(argv[4], "TCP"))
 			{
-				RunTCPClient(argv);
+				RunClient(argv, SOCK_STREAM);
 				return 0;
 			}
 			else
-			{*/
+			{
 				if(!strcmp(argv[4], "UDP"))
 				{
-					RunUDPClient(argv);
+					RunClient(argv, SOCK_DGRAM);
 				}
-			/*}
+			}
 			getch();
 		}
-	}*/
+	}
 	return 0;
 }
 
-void RunTCPClient(char** argv)
+void RunClient(char** argv, int SocketType)
 {
 	char* Log = new char[100];
 	FILE *file;
 	SOCKET Listener;
-	if(!StartClient(&Listener, SOCK_STREAM, argv[1], argv[2], Log))
+	if(!StartClient(&Listener, SocketType, argv[1], argv[2], Log))
 	{
-		printf("Connected to %s %s\n", argv[1], argv[2]);	
-		int symbols;	
+		printf("Connected to %s %s\n", argv[1], argv[2]);        
+		int symbols;        
 		int BytesCount = 0, FileLength = 0;
 		char *FilePath = argv[3];
 		FILE *file;
 		file = fopen(FilePath,"rb");
 		if(file != NULL)
 		{
-			SendFileNameByTCP(FilePath, Listener);
-			SendFileLengthAndStartPositionByTCP(file, Listener, &FileLength, &BytesCount);
+			SendFileName(FilePath, Listener);
+			SendFileLengthAndStartPosition(file, Listener, &FileLength, &BytesCount);
 			if(BytesCount)
 			{
 				fseek(file, BytesCount, SEEK_SET);
 			}
 			printf("Start sending\n");
 			while(BytesCount != FileLength) 
-			{				
+			{                                
 				char buf[6];
-				char bufer[1000000];
-				if(KeyPressed(VK_UP))
+				char bufer[1000];
+				if(KeyPressed(VK_UP) && SocketType == SOCK_STREAM)
 				{
 					int result = send(Listener, "~", 1, MSG_OOB);
 					printf("Send out of band data\n");
 					if(recv(Listener, buf, sizeof(buf), 0) <= 0)
-					{					
+					{                                        
 						break;
-					}	
-				}	
+					}        
+				}        
 				else
 				{
-					symbols = fread(bufer, 1, 1000000, file);
+					symbols = fread(bufer, 1, 1000, file);
 					send(Listener, bufer, symbols, 0);
 					if(recv(Listener, buf, sizeof(buf), 0) <= 0)
-					{					
+					{                                        
 						break;
-					}	
+					}        
 					BytesCount += symbols;
-				}								
-			}	
+				}                                                                
+			}        
 			Sleep(1000);
 			fclose(file);
 			SocketHelper::CloseSocket(Listener);
 			printf("Connection Closed\n");
 			if(FileLength > BytesCount)
 			{
-				WriteCountOfSendedBytesToLogFile(BytesCount);					
+				WriteCountOfSendedBytesToLogFile(BytesCount);                                        
 			}
 			else
 			{
 				WriteCountOfSendedBytesToLogFile(0);
 			}
-		}		
-	}
-}
-
-void RunUDPClient(char** argv)
-{
-	char* Log = new char[100];
-	FILE *file;
-	SOCKET Listener;
-	if(!StartClient(&Listener, SOCK_DGRAM, argv[1], argv[2], Log))
-	{
-		struct sockaddr_in Server;
-		int Server_Length = (int)sizeof(struct sockaddr_in);
-		printf("Connected to %s %s\n", argv[1], argv[2]);	
-		int symbols;	
-		int BytesCount = 0, FileLength = 0;
-		char *FilePath = argv[3];
-		FILE *file;
-		file = fopen(FilePath,"rb");
-		if(file != NULL)
-		{
-			SendFileNameByUDP(FilePath, Listener, &Server, &Server_Length);
-			SendFileLengthAndStartPositionByUDP(file, Listener, &FileLength, &BytesCount, &Server, &Server_Length);
-			if(BytesCount)
-			{
-				fseek(file, BytesCount, SEEK_SET);
-			}
-			printf("Start sending\n");
-			while(BytesCount != FileLength) 
-			{				
-				char buf[6];
-				char bufer[1000000];
-				symbols = fread(bufer, 1, 1000000, file);
-				sendto(Listener, bufer, symbols, 0, (struct sockaddr *)&Server, Server_Length);
-				if(recvfrom(Listener, buf, sizeof(buf), 0, (struct sockaddr *)&Server, &Server_Length) <= 0)
-				{					
-					break;
-				}	
-				BytesCount += symbols;
-			}	
-			Sleep(1000);
-			fclose(file);
-			SocketHelper::CloseSocket(Listener);
-			printf("Connection Closed\n");
-			if(FileLength > BytesCount)
-			{
-				WriteCountOfSendedBytesToLogFile(BytesCount);					
-			}
-			else
-			{
-				WriteCountOfSendedBytesToLogFile(0);
-			}
-		}		
+		}                
 	}
 }
 
@@ -264,7 +209,7 @@ int StartClient(SOCKET *Listener, int SocketType, char* IpAddress, char* Port, c
 	return Result;
 }
 
-void SendFileNameByTCP(char *FilePath, SOCKET Socket)
+void SendFileName(char *FilePath, SOCKET Socket)
 {
 	char buf[1024];
 	char *FileName = new char[100];
@@ -276,24 +221,12 @@ void SendFileNameByTCP(char *FilePath, SOCKET Socket)
 	recv(Socket, buf, sizeof(buf), 0);
 }
 
-void SendFileNameByUDP(char *FilePath, SOCKET Socket, sockaddr_in* Server, int* Server_Length)
-{
-	char buf[1024];
-	char *FileName = new char[100];
-	char *Extension = new char[5];
-	_splitpath(FilePath, new char[1], new char[200], FileName, Extension);
-	strcat(FileName, Extension);
-	strcat(FileName, "#");
-	sendto(Socket, FileName, strlen(FileName) + 1, 0, (struct sockaddr *)Server, *Server_Length);
-	recvfrom(Socket, buf, sizeof(buf), 0, (struct sockaddr *)Server, Server_Length);
-}
-
-void SendFileLengthAndStartPositionByTCP(FILE *file, SOCKET Socket, int *FileLength, int *BytesCount)
+void SendFileLengthAndStartPosition(FILE *file, SOCKET Socket, int *FileLength, int *BytesCount)
 {
 	char buf[1024];
 	char *bufer = new char[15];
 	*FileLength = filelength(fileno(file));
-	itoa(*FileLength, bufer, 10);		
+	itoa(*FileLength, bufer, 10);                
 	send(Socket, bufer, strlen(bufer), 0);
 	recv(Socket, buf, sizeof(buf), 0);
 	*BytesCount = ReadCountOfSendedBytesFromLogFile();
@@ -301,21 +234,6 @@ void SendFileLengthAndStartPositionByTCP(FILE *file, SOCKET Socket, int *FileLen
 	itoa(*BytesCount, bufer, 10);
 	send(Socket, bufer, strlen(bufer) * sizeof(char), 0);
 	recv(Socket, buf, sizeof(buf), 0);
-}
-
-void SendFileLengthAndStartPositionByUDP(FILE *file, SOCKET Socket, int *FileLength, int *BytesCount, sockaddr_in* Server, int* Server_Length)
-{
-	char buf[1024];
-	char *bufer = new char[15];
-	*FileLength = filelength(fileno(file));
-	itoa(*FileLength, bufer, 10);		
-	sendto(Socket, bufer, strlen(bufer), 0, (struct sockaddr *)Server, *Server_Length);
-	recvfrom(Socket, buf, sizeof(buf), 0, (struct sockaddr *)Server, Server_Length);
-	*BytesCount = ReadCountOfSendedBytesFromLogFile();
-	bufer = new char[15];
-	itoa(*BytesCount, bufer, 10);
-	sendto(Socket, bufer, strlen(bufer) * sizeof(char), 0, (struct sockaddr *)Server, *Server_Length);
-	recvfrom(Socket, buf, sizeof(buf), 0, (struct sockaddr *)Server, Server_Length);
 }
 
 int ReadCountOfSendedBytesFromLogFile()
@@ -330,7 +248,7 @@ int ReadCountOfSendedBytesFromLogFile()
 void WriteCountOfSendedBytesToLogFile(int BytesCount)
 {
 	ofstream File("log.txt", ios::trunc);
-	File << BytesCount;	
+	File << BytesCount;        
 	File.close();
 }
 
