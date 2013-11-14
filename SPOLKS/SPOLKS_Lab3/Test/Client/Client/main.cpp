@@ -118,13 +118,13 @@ int main(int argc, char** argv)
 				RunClient(argv, SOCK_STREAM);
 				return 0;
 			}
-			else
+			/*else
 			{
 				if(!strcmp(argv[4], "UDP"))
 				{
 					RunClient(argv, SOCK_DGRAM);
 				}
-			}
+			}*/
 			getch();
 		}
 	}

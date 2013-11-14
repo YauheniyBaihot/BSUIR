@@ -7,11 +7,15 @@
 #include <fstream>
 #include <string>
 #include <algorithm>
+#include <map>
+#include <time.h>
 using namespace std;
+
+string convertInt(int number);
 
 void RunTCPServer(char** argv);
 void RunUDPServer(char** argv);
-int StartTCPServer(SOCKET *ClientSocket, char* IpAddress, char* Port, char* Log);
+int StartTCPServer(SOCKET *ClientSocket, SOCKET *Listener, char* IpAddress, char* Port, char* Log);
 int StartUDPServer(SOCKET *ClientSocket, char* IpAddress, char* Port, char* Log);
 char *GetFileNameByTCP(SOCKET Listener);
 char *GetFileNameByUDP(SOCKET Listener, sockaddr_in* Client, int* Client_Length);
@@ -105,29 +109,29 @@ string SocketHelper::CmdArgumentsToLine(int argc, char **argv, char *type)
 
 int main(int argc, char** argv)
 {        
-	if(argc == 3)
+	/*if(argc == 3)
 	{
-		SocketHelper::RunProcesses(argc, argv, L"..\\Debug\\Server.exe");
+	SocketHelper::RunProcesses(argc, argv, L"..\\Debug\\Server.exe");
 	}
 	else
 	{
-		if(argc == 4)
-		{
-			printf("%s Server start\n", argv[3]);
-			if(!strcmp(argv[3], "TCP"))
-			{
-				RunTCPServer(argv);
-			}
-			else
-			{
-				if(!strcmp(argv[3], "UDP"))
-				{                                        
-					RunUDPServer(argv);
-				}
-			}
-			getch();
-		}
+	if(argc == 4)
+	{
+	printf("%s Server start\n", argv[3]);
+	if(!strcmp(argv[3], "TCP"))
+	{*/
+	RunTCPServer(argv);
+	/*}
+	else
+	{
+	if(!strcmp(argv[3], "UDP"))
+	{                                        
+	RunUDPServer(argv);
 	}
+	}
+	getch();
+	}
+	}*/
 	return 0;
 }
 
@@ -136,58 +140,132 @@ void RunTCPServer(char** argv)
 	while(true)
 	{                
 		char* Log = new char[100];
-		SOCKET ClientSocket;                        
-		StartTCPServer(&ClientSocket, argv[1], argv[2], Log);
-		char FileName[106];
+		SOCKET ClientSocket, Listener;     		
+		StartTCPServer(&ClientSocket, &Listener, argv[1], argv[2], Log);
+
+		//
+		int Number = 0;
+		FD_SET ReadSet;
+		int ReadySock;
+		map <int,string> clients;
+		clients.clear();
+		typedef map<int,string>::value_type valType;
+		//
+
+		/*char FileName[106];
 		strcpy(FileName, GetFileNameByTCP(ClientSocket));
 		int BytesCount = 0, FileLength = 0;
-		GetFileLengthAndStartPositionByTCP(ClientSocket, &FileLength, &BytesCount);
+		GetFileLengthAndStartPositionByTCP(ClientSocket, &FileLength, &BytesCount);*/
 		while(true)
 		{
 			FILE *file;
 			char bufer[1000];
 			int Response = 0;
-			fd_set fdread,fdOOB;
-			BOOL isOOB = false;
-			FD_ZERO(&fdread);
-			FD_ZERO(&fdOOB);
-			FD_SET(ClientSocket, &fdread);
-			FD_SET(ClientSocket, &fdOOB);
-			if(select(0, &fdread, 0, &fdOOB, 0) == SOCKET_ERROR)
+
+			//
+			// Заполняем множество сокетов
+			FD_ZERO(&ReadSet);
+			FD_SET(Listener, &ReadSet);
+			for(map<int,string>::iterator it = clients.begin(); it != clients.end(); it++)
+				FD_SET((*it).first , &ReadSet);
+			timeval timeout;
+			timeout.tv_sec = 15;
+			timeout.tv_usec = 0;
+			int mx = Listener;
+			for(map<int,string>::iterator it = clients.begin(); it != clients.end(); it++)
 			{
-				printf("select() failed: %d\n",WSAGetLastError());
+				if ((*it).first > Listener)
+					mx = (*it).first;
+			};
+			// Ждём события в одном из сокетов
+			if ((ReadySock = select(mx+1, &ReadSet, NULL, NULL, &timeout)) == SOCKET_ERROR)
+			{
+				printf("Select Error\n");
 				return;
 			}
-			else
+			if (FD_ISSET(Listener, &ReadSet))
 			{
-				if(FD_ISSET(ClientSocket, &fdOOB))
+				ClientSocket = accept(Listener, NULL, NULL);
+				if (ClientSocket == INVALID_SOCKET)
 				{
-					char bbb[1];
-					if(recv(ClientSocket, bbb, 1, MSG_OOB) > 0)
-					{   
-						printf("Bytes Count: %d\n", BytesCount);
-					}
-					send(ClientSocket, "ready", 6 * sizeof(char), 0);     
-				} 
-				else
-				{
-					file = fopen(FileName, "ab");
-					Response = recv(ClientSocket, bufer, 1000, 0);
-					if (Response <= 0)
-					{
-						printf("Connection Closed\n");
-						SocketHelper::CloseSocket(ClientSocket);
-						fclose(file);
-						break;
-					}
-					fwrite(bufer, 1, Response, file);
-					BytesCount += Response;
-					send(ClientSocket, "ready", 6 * sizeof(char), 0);
-					fclose (file);
+					return;
 				}
+				ULONG ulBlock = 1;
+				if (ioctlsocket(ClientSocket, FIONBIO, &ulBlock) == SOCKET_ERROR)
+				{
+					return;
+				}
+				Sleep(1);
+				char FileName[106];
+				strcpy(FileName, GetFileNameByTCP(ClientSocket));
+				int BytesCount = 0, FileLength = 0;
+				GetFileLengthAndStartPositionByTCP(ClientSocket, &FileLength, &BytesCount);
+				Number++;   // увеличиваем счетчик подключившихся клиентов
+				string filename(convertInt(Number));
+				filename.append(FileName);
+				clients.insert( valType(ClientSocket,filename));
 			}
+			for(map<int,string>::iterator it = clients.begin(); it != clients.end(); it++)
+			{
+				if(FD_ISSET((*it).first, &ReadSet))
+				{
+					FILE *F;
+					if (!(F = fopen((*it).second.c_str() ,"ab")))
+					{
+						perror("Create File");
+						break;
+					};
+
+					Response = recv((*it).first, bufer, 1000, 0);
+					if(Response <= 0)
+					{
+						// Соединение разорвано, удаляем сокет из множества
+						closesocket((*it).first);
+						clients.erase((*it).first);
+						continue;
+					}
+					//записали данные в файл
+					fwrite(bufer, sizeof(char), Response, F);
+					// Отправляем данные обратно клиенту
+					send((*it).first, "ready", 6 * sizeof(char), 0);
+
+					fclose(F);
+				}
+				printf("\nReceiving the part of file %d is complete.\n",Number);
+			}    
+			//
+
+			/*file = fopen(FileName, "ab");
+			Response = recv(ClientSocket, bufer, 1000, 0);
+			if (Response <= 0)
+			{
+				printf("Connection Closed\n");
+				SocketHelper::CloseSocket(ClientSocket);
+				fclose(file);
+				break;
+			}
+			fwrite(bufer, 1, Response, file);
+			BytesCount += Response;
+			send(ClientSocket, "ready", 6 * sizeof(char), 0);
+			fclose (file);*/
 		}
 	}
+}
+
+string convertInt(int number)
+{
+	if (number == 0)
+		return "0";
+	string temp="";
+	string returnvalue="";
+	while (number>0)
+	{
+		temp+=number%10+48;
+		number/=10;
+	}
+	for (int i=0;i<temp.length();i++)
+		returnvalue+=temp[temp.length()-i-1];
+	return returnvalue;
 }
 
 void RunUDPServer(char** argv)
@@ -226,26 +304,35 @@ void RunUDPServer(char** argv)
 	}
 }
 
-int StartTCPServer(SOCKET *ClientSocket, char* IpAddress, char* Port, char* Log)
+int StartTCPServer(SOCKET *ClientSocket, SOCKET *Listener, char* IpAddress, char* Port, char* Log)
 {
-	SOCKET Listener;
 	sockaddr_in ListenerName;
-	int Result = SocketHelper::InitializeSocket(&Listener, &ListenerName, SOCK_STREAM, inet_addr(IpAddress), htons(atoi(Port)), Log);
+	int Result = SocketHelper::InitializeSocket(Listener, &ListenerName, SOCK_STREAM, inet_addr(IpAddress), htons(atoi(Port)), Log);
 	if(!Result)
 	{
-		int Answer = bind(Listener, (const sockaddr*)&ListenerName, sizeof(ListenerName));                
+		int Answer = bind(*Listener, (const sockaddr*)&ListenerName, sizeof(ListenerName));                
 		if (Answer != 0)
 		{
 			strcpy(Log, "Failed to bind socket\n");
 			return 0;
 		}
-		Answer = listen(Listener, SOMAXCONN);
+
+		//
+		ULONG ulBlock = 1;
+		if (ioctlsocket(*Listener, FIONBIO, &ulBlock) == SOCKET_ERROR)
+		{
+			strcpy(Log, "Failed ioctlsocket\n");
+			return 0;
+		}
+		//
+
+		Answer = listen(*Listener, SOMAXCONN);
 		if (Answer != 0)
 		{
 			strcpy(Log, "Failed to put socket into listening state\n");
 			return 0;
 		}
-		*ClientSocket = accept(Listener, NULL, NULL);
+		//*ClientSocket = accept(Listener, NULL, NULL);
 	}
 	return Result;
 }
