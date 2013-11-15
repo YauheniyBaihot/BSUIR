@@ -122,5 +122,14 @@ namespace UI.Controllers
         }
 
         #endregion
+
+        #region Lab4
+
+        public ActionResult Lab4()
+        {
+            return View();
+        }
+
+        #endregion
     }
 }
