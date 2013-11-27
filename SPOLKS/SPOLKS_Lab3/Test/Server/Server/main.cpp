@@ -221,8 +221,16 @@ void RunTCPServer(char** argv)
 					{
 						// Соединение разорвано, удаляем сокет из множества
 						closesocket((*it).first);
-						clients.erase((*it).first);
-						continue;
+						clients.erase((*it).first);						
+						if(clients.size() == 0)
+						{
+							break;
+						}
+						else
+						{
+							it = clients.begin();
+							continue;
+						}
 					}
 					//записали данные в файл
 					fwrite(bufer, sizeof(char), Response, F);
