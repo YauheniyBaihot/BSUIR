@@ -11,7 +11,6 @@
 #include <time.h>
 using namespace std;
 
-string convertInt(int number);
 
 void RunTCPServer(char** argv);
 void RunUDPServer(char** argv);
@@ -21,6 +20,9 @@ char *GetFileNameByTCP(SOCKET Listener);
 char *GetFileNameByUDP(SOCKET Listener, sockaddr_in* Client, int* Client_Length);
 void GetFileLengthAndStartPositionByTCP(SOCKET Listener, int *FileLength, int *BytesCount);
 void GetFileLengthAndStartPositionByUDP(SOCKET Listener, int *FileLength, int *BytesCount, sockaddr_in* Client, int* Client_Length);
+void GetFileLengthAndStartPositionByTCP(SOCKET Listener, int *FileLength, int *BytesCount, char* FileName);
+void GetFileLengthAndStartPositionByUDP(SOCKET Listener, int *FileLength, int *BytesCount, char* FileName, sockaddr_in* Client, int* Client_Length);
+string ConvertIntToString(int Number);
 
 #ifndef SocketHelper
 
@@ -109,29 +111,29 @@ string SocketHelper::CmdArgumentsToLine(int argc, char **argv, char *type)
 
 int main(int argc, char** argv)
 {        
-	/*if(argc == 3)
+	if(argc == 3)
 	{
-	SocketHelper::RunProcesses(argc, argv, L"..\\Debug\\Server.exe");
+		SocketHelper::RunProcesses(argc, argv, L"..\\Debug\\Server.exe");
 	}
 	else
 	{
-	if(argc == 4)
-	{
-	printf("%s Server start\n", argv[3]);
-	if(!strcmp(argv[3], "TCP"))
-	{*/
-	RunTCPServer(argv);
-	/*}
-	else
-	{
-	if(!strcmp(argv[3], "UDP"))
-	{                                        
-	RunUDPServer(argv);
+		if(argc == 4)
+		{
+			printf("%s Server start\n", argv[3]);
+			if(!strcmp(argv[3], "TCP"))
+			{
+				RunTCPServer(argv);
+			}
+			else
+			{
+				if(!strcmp(argv[3], "UDP"))
+				{                                        
+					RunUDPServer(argv);
+				}
+			}
+			getch();
+		}
 	}
-	}
-	getch();
-	}
-	}*/
 	return 0;
 }
 
@@ -199,9 +201,9 @@ void RunTCPServer(char** argv)
 				char FileName[106];
 				strcpy(FileName, GetFileNameByTCP(ClientSocket));
 				int BytesCount = 0, FileLength = 0;
-				GetFileLengthAndStartPositionByTCP(ClientSocket, &FileLength, &BytesCount);
+				GetFileLengthAndStartPositionByTCP(ClientSocket, &FileLength, &BytesCount, FileName);
 				Number++;   // увеличиваем счетчик подключившихся клиентов
-				string filename(convertInt(Number));
+				string filename;//(ConvertIntToString(Number));
 				filename.append(FileName);
 				clients.insert( valType(ClientSocket,filename));
 			}
@@ -221,8 +223,16 @@ void RunTCPServer(char** argv)
 					{
 						// Соединение разорвано, удаляем сокет из множества
 						closesocket((*it).first);
-						clients.erase((*it).first);
-						continue;
+						clients.erase((*it).first);						
+						if(clients.size() == 0)
+						{
+							break;
+						}
+						else
+						{
+							it = clients.begin();
+							continue;
+						}
 					}
 					//записали данные в файл
 					fwrite(bufer, sizeof(char), Response, F);
@@ -239,10 +249,10 @@ void RunTCPServer(char** argv)
 			Response = recv(ClientSocket, bufer, 1000, 0);
 			if (Response <= 0)
 			{
-				printf("Connection Closed\n");
-				SocketHelper::CloseSocket(ClientSocket);
-				fclose(file);
-				break;
+			printf("Connection Closed\n");
+			SocketHelper::CloseSocket(ClientSocket);
+			fclose(file);
+			break;
 			}
 			fwrite(bufer, 1, Response, file);
 			BytesCount += Response;
@@ -252,22 +262,6 @@ void RunTCPServer(char** argv)
 	}
 }
 
-string convertInt(int number)
-{
-	if (number == 0)
-		return "0";
-	string temp="";
-	string returnvalue="";
-	while (number>0)
-	{
-		temp+=number%10+48;
-		number/=10;
-	}
-	for (int i=0;i<temp.length();i++)
-		returnvalue+=temp[temp.length()-i-1];
-	return returnvalue;
-}
-
 void RunUDPServer(char** argv)
 {
 	while(true)
@@ -275,31 +269,118 @@ void RunUDPServer(char** argv)
 		struct sockaddr_in Client;
 		int Client_Length = (int)sizeof(struct sockaddr_in);
 		char* Log = new char[100];
-		SOCKET ClientSocket;                                
+		SOCKET ClientSocket, Listener = 116;                                
 		StartUDPServer(&ClientSocket, argv[1], argv[2], Log);
-		char FileName[106];
+
+		//
+		int Number = 0;
+		FD_SET ReadSet;
+		int ReadySock;
+		map <int,string> clients;
+		clients.clear();
+		typedef map<int,string>::value_type valType;
+		//
+
+		/*char FileName[106];
 		strcpy(FileName, GetFileNameByUDP(ClientSocket, &Client, &Client_Length));
 		int BytesCount = 0, FileLength = 0;
-		GetFileLengthAndStartPositionByUDP(ClientSocket, &FileLength, &BytesCount, &Client, &Client_Length);
+		GetFileLengthAndStartPositionByUDP(ClientSocket, &FileLength, &BytesCount, &Client, &Client_Length);*/
 		while(true)
 		{
 			FILE *file;
 			char bufer[1000];
 			int Response = 0;
 
-			file = fopen(FileName, "ab");
+			//
+			// Заполняем множество сокетов
+			FD_ZERO(&ReadSet);
+			FD_SET(ClientSocket, &ReadSet);
+			for(map<int,string>::iterator it = clients.begin(); it != clients.end(); it++)
+				FD_SET((*it).first , &ReadSet);
+			timeval timeout;
+			timeout.tv_sec = 15;
+			timeout.tv_usec = 0;
+			int mx = ClientSocket;
+			for(map<int,string>::iterator it = clients.begin(); it != clients.end(); it++)
+			{
+				if ((*it).first > ClientSocket)
+					mx = (*it).first;
+			};
+			// Ждём события в одном из сокетов
+			if ((ReadySock = select(mx+1, &ReadSet, NULL, NULL, &timeout)) == SOCKET_ERROR)
+			{
+				printf("Select Error\n");
+				return;
+			}
+			int x = FD_ISSET(ClientSocket, &ReadSet);
+			if (FD_ISSET(Listener, &ReadSet))
+			{
+				ULONG ulBlock = 1;
+				if (ioctlsocket(ClientSocket, FIONBIO, &ulBlock) == SOCKET_ERROR)
+				{
+					return;
+				}
+				Sleep(1);
+				char FileName[106];
+				strcpy(FileName, GetFileNameByUDP(ClientSocket, &Client, &Client_Length));
+				int BytesCount = 0, FileLength = 0;
+				GetFileLengthAndStartPositionByUDP(ClientSocket, &FileLength, &BytesCount, FileName, &Client, &Client_Length);
+				Number++;   // увеличиваем счетчик подключившихся клиентов
+				string filename;//(ConvertIntToString(Number));
+				filename.append(FileName);
+				clients.insert( valType(ClientSocket,filename));
+				Listener = 13;
+			}
+			for(map<int,string>::iterator it = clients.begin(); it != clients.end(); it++)
+			{
+				if(FD_ISSET((*it).first, &ReadSet))
+				{
+					FILE *F;
+					if (!(F = fopen((*it).second.c_str() ,"ab")))
+					{
+						perror("Create File");
+						break;
+					};
+					Response = recvfrom(ClientSocket, bufer, 1000, 0, (struct sockaddr *)&Client, &Client_Length);
+					if(Response <= 0)
+					{
+						// Соединение разорвано, удаляем сокет из множества
+						closesocket((*it).first);
+						clients.erase((*it).first);						
+						if(clients.size() == 0)
+						{
+							break;
+						}
+						else
+						{
+							it = clients.begin();
+							continue;
+						}
+					}
+					//записали данные в файл
+					fwrite(bufer, sizeof(char), Response, F);
+					// Отправляем данные обратно клиенту
+					sendto(ClientSocket, "ready", 6 * sizeof(char), 0, (struct sockaddr *)&Client, Client_Length);
+
+					fclose(F);
+				}
+				printf("\nReceiving the part of file %d is complete.\n",Number);
+			}    
+			//
+
+			/*file = fopen(FileName, "ab");
 			Response = recvfrom(ClientSocket, bufer, 1000, 0, (struct sockaddr *)&Client, &Client_Length);
 			if (Response <= 0)
 			{
-				printf("Connection Closed\n");
-				SocketHelper::CloseSocket(ClientSocket);
-				fclose(file);
-				break;
+			printf("Connection Closed\n");
+			SocketHelper::CloseSocket(ClientSocket);
+			fclose(file);
+			break;
 			}
 			fwrite(bufer, 1, Response, file);
 			BytesCount += Response;
 			sendto(ClientSocket, "ready", 6 * sizeof(char), 0, (struct sockaddr *)&Client, Client_Length);
-			fclose (file);
+			fclose (file);*/
 		}
 	}
 }
@@ -350,6 +431,15 @@ int StartUDPServer(SOCKET *ClientSocket, char* IpAddress, char* Port, char* Log)
 			strcpy(Log, "Failed to bind socket\n");
 			return 0;
 		}                        
+
+		//
+		ULONG ulBlock = 1;
+		if (ioctlsocket(Listener, FIONBIO, &ulBlock) == SOCKET_ERROR)
+		{
+			strcpy(Log, "Failed ioctlsocket\n");
+			return 0;
+		}
+		//
 		*ClientSocket = Listener;                
 	}                        
 	return Result;
@@ -384,17 +474,84 @@ void GetFileLengthAndStartPositionByTCP(SOCKET Listener, int *FileLength, int *B
 	bufer = new char[15];
 	recv(Listener, bufer, 15, 0);
 	*BytesCount = atoi(bufer);
-	send(Listener, "ready", 6 * sizeof(char), 0);        
+	send(Listener, "ready", 6 * sizeof(char), 0);
 }
 
 void GetFileLengthAndStartPositionByUDP(SOCKET Listener, int *FileLength, int *BytesCount, sockaddr_in* Client, int* Client_Length)
 {
 	char *bufer = new char[15];
+	Sleep(10);
 	recvfrom(Listener, bufer, 15, 0, (struct sockaddr *)Client, Client_Length);
 	*FileLength = atoi(bufer);
 	sendto(Listener, "ready", 6 * sizeof(char), 0, (struct sockaddr *)Client, *Client_Length);
 	bufer = new char[15];
+	Sleep(10);
 	recvfrom(Listener, bufer, 15, 0, (struct sockaddr *)Client, Client_Length);
 	*BytesCount = atoi(bufer);
-	sendto(Listener, "ready", 6 * sizeof(char), 0, (struct sockaddr *)Client, *Client_Length);        
+	sendto(Listener, "ready", 6 * sizeof(char), 0, (struct sockaddr *)Client, *Client_Length);    
+}
+
+void GetFileLengthAndStartPositionByTCP(SOCKET Listener, int *FileLength, int *BytesCount, char* FileName)
+{
+	char *bufer = new char[15];
+	recv(Listener, bufer, 15, 0);
+	*FileLength = atoi(bufer);
+	FILE *file;
+	bufer = new char[15];
+	file = fopen(FileName,"rb");
+	if(file != NULL)
+	{
+		*BytesCount = filelength(fileno(file));
+		fclose(file);
+	}
+	else
+	{
+		*BytesCount = 0;
+	}
+	itoa(*BytesCount, bufer, 10);
+	send(Listener, bufer, 15, 0);
+}
+
+void GetFileLengthAndStartPositionByUDP(SOCKET Listener, int *FileLength, int *BytesCount, char* FileName, sockaddr_in* Client, int* Client_Length)
+{
+	char *bufer = new char[15];
+	Sleep(10);
+	recvfrom(Listener, bufer, 15, 0, (struct sockaddr *)Client, Client_Length);
+	*FileLength = atoi(bufer);
+	FILE *file;
+	bufer = new char[15];
+	file = fopen(FileName,"rb");
+	if(file != NULL)
+	{
+		*BytesCount = filelength(fileno(file));
+		fclose(file);
+	}
+	else
+	{
+		*BytesCount = 0;
+	}
+	itoa(*BytesCount, bufer, 10);
+	Sleep(10);
+	sendto(Listener, bufer, 15, 0, (struct sockaddr *)Client, *Client_Length);    
+	Sleep(10);
+}
+
+string ConvertIntToString(int Number)
+{
+	if (Number == 0)
+	{
+		return "0";
+	}
+	string Temp="";	
+	while (Number > 0)
+	{
+		Temp += Number % 10 + 48;
+		Number /= 10;
+	}
+	string Result="";
+	for (int i=0; i < Temp.length(); i++)
+	{
+		Result += Temp[Temp.length()-i-1];
+	}
+	return Result;
 }

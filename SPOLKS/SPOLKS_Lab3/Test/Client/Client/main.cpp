@@ -13,6 +13,7 @@ void RunClient(char** argv, int SocketType);
 int StartClient(SOCKET *Listener, int SocketType, char* IpAddress, char* Port, char* Log);
 void SendFileName(char *FilePath, SOCKET ClientSocket);
 void SendFileLengthAndStartPosition(FILE *file, SOCKET Socket, int *FileLength, int *BytesCount);
+void GetStartPosition(FILE *file, SOCKET Socket, int *FileLength, int *BytesCount);
 int ReadCountOfSendedBytesFromLogFile();
 void WriteCountOfSendedBytesToLogFile(int BytesCount);
 bool KeyPressed(int key);
@@ -118,13 +119,13 @@ int main(int argc, char** argv)
 				RunClient(argv, SOCK_STREAM);
 				return 0;
 			}
-			/*else
+			else
 			{
 				if(!strcmp(argv[4], "UDP"))
 				{
 					RunClient(argv, SOCK_DGRAM);
 				}
-			}*/
+			}
 			getch();
 		}
 	}
@@ -147,7 +148,8 @@ void RunClient(char** argv, int SocketType)
 		if(file != NULL)
 		{
 			SendFileName(FilePath, Listener);
-			SendFileLengthAndStartPosition(file, Listener, &FileLength, &BytesCount);
+			GetStartPosition(file, Listener, &FileLength, &BytesCount);
+			//SendFileLengthAndStartPosition(file, Listener, &FileLength, &BytesCount);
 			if(BytesCount)
 			{
 				fseek(file, BytesCount, SEEK_SET);
@@ -157,7 +159,7 @@ void RunClient(char** argv, int SocketType)
 			{                                
 				char buf[6];
 				char bufer[1000];
-				if(KeyPressed(VK_UP) && SocketType == SOCK_STREAM)
+				/*if(KeyPressed(VK_UP) && SocketType == SOCK_STREAM)
 				{
 					int result = send(Listener, "~", 1, MSG_OOB);
 					printf("Send out of band data\n");
@@ -167,7 +169,7 @@ void RunClient(char** argv, int SocketType)
 					}        
 				}        
 				else
-				{
+				{*/
 					symbols = fread(bufer, 1, 1000, file);
 					send(Listener, bufer, symbols, 0);
 					if(recv(Listener, buf, sizeof(buf), 0) <= 0)
@@ -175,7 +177,7 @@ void RunClient(char** argv, int SocketType)
 						break;
 					}        
 					BytesCount += symbols;
-				}                                                                
+				//}                                                                
 			}        
 			Sleep(1000);
 			fclose(file);
@@ -250,6 +252,16 @@ void WriteCountOfSendedBytesToLogFile(int BytesCount)
 	ofstream File("log.txt", ios::trunc);
 	File << BytesCount;        
 	File.close();
+}
+
+void GetStartPosition(FILE *file, SOCKET Socket, int *FileLength, int *BytesCount)
+{
+	char *bufer = new char[15];
+	*FileLength = filelength(fileno(file));
+	itoa(*FileLength, bufer, 10);                
+	send(Socket, bufer, strlen(bufer), 0);
+	recv(Socket, bufer, 15, 0);
+	*BytesCount = atoi(bufer);
 }
 
 bool KeyPressed(int key)
