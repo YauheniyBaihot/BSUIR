@@ -241,7 +241,7 @@ void RunTCPServer(char** argv)
 
 					fclose(F);
 				}
-				printf("\nReceiving the part of file %d is complete.\n",Number);
+				//printf("\nReceiving the part of file %d is complete.\n",Number);
 			}    
 			//
 
@@ -364,7 +364,7 @@ void RunUDPServer(char** argv)
 
 					fclose(F);
 				}
-				printf("\nReceiving the part of file %d is complete.\n",Number);
+				//printf("\nReceiving the part of file %d is complete.\n",Number);
 			}    
 			//
 
