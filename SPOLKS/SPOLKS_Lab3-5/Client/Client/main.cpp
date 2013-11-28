@@ -158,7 +158,11 @@ void RunClient(char** argv, int SocketType)
 			while(BytesCount != FileLength) 
 			{                                
 				char buf[6];
+<<<<<<< HEAD:SPOLKS/SPOLKS_Lab3/Test/Client/Client/main.cpp
 				char bufer[1000];
+=======
+				char bufer[100000];
+>>>>>>> f5d9b8976f78b429b32d2fc74410c523795933b1:SPOLKS/SPOLKS_Lab3-5/Client/Client/main.cpp
 				if(KeyPressed(VK_UP) && SocketType == SOCK_STREAM)
 				{
 					int result = send(Listener, "~", 1, MSG_OOB);
@@ -170,7 +174,11 @@ void RunClient(char** argv, int SocketType)
 				}        
 				else
 				{
+<<<<<<< HEAD:SPOLKS/SPOLKS_Lab3/Test/Client/Client/main.cpp
 					symbols = fread(bufer, 1, 1000, file);
+=======
+					symbols = fread(bufer, 1, 100000, file);
+>>>>>>> f5d9b8976f78b429b32d2fc74410c523795933b1:SPOLKS/SPOLKS_Lab3-5/Client/Client/main.cpp
 					send(Listener, bufer, symbols, 0);
 					if(recv(Listener, buf, sizeof(buf), 0) <= 0)
 					{                                        
