@@ -158,7 +158,7 @@ void RunClient(char** argv, int SocketType)
 			while(BytesCount != FileLength) 
 			{                                
 				char buf[6];
-				char bufer[1000];
+				char bufer[65536];
 				if(KeyPressed(VK_UP) && SocketType == SOCK_STREAM)
 				{
 					int result = send(Listener, "~", 1, MSG_OOB);
@@ -170,7 +170,7 @@ void RunClient(char** argv, int SocketType)
 				}        
 				else
 				{
-					symbols = fread(bufer, 1, 1000, file);
+					symbols = fread(bufer, 1, 65536, file);
 					send(Listener, bufer, symbols, 0);
 					if(recv(Listener, buf, sizeof(buf), 0) <= 0)
 					{                                        

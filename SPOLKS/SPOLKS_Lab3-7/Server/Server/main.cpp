@@ -15,7 +15,7 @@ using namespace std;
 void RunTCPServer(char** argv);
 void RunUDPServer(char** argv);
 int StartTCPServer(SOCKET *ClientSocket, SOCKET *Listener, char* IpAddress, char* Port, char* Log);
-int StartUDPServer(SOCKET *ClientSocket, char* IpAddress, char* Port, char* Log);
+int StartUDPServer(SOCKET *ClientSocket, SOCKET *Listener, char* IpAddress, char* Port, char* Log);
 char *GetFileNameByTCP(SOCKET Listener);
 char *GetFileNameByUDP(SOCKET Listener, sockaddr_in* Client, int* Client_Length);
 void GetFileLengthAndStartPositionByTCP(SOCKET Listener, int *FileLength, int *BytesCount);
@@ -161,7 +161,7 @@ void RunTCPServer(char** argv)
 		while(true)
 		{
 			FILE *file;
-			char bufer[1000];
+			char bufer[65536];
 			int Response = 0;
 
 			//
@@ -218,7 +218,7 @@ void RunTCPServer(char** argv)
 						break;
 					};
 
-					Response = recv((*it).first, bufer, 1000, 0);
+					Response = recv((*it).first, bufer, 65536, 0);
 					if(Response <= 0)
 					{
 						// Соединение разорвано, удаляем сокет из множества
@@ -269,8 +269,8 @@ void RunUDPServer(char** argv)
 		struct sockaddr_in Client;
 		int Client_Length = (int)sizeof(struct sockaddr_in);
 		char* Log = new char[100];
-		SOCKET ClientSocket, Listener = 116;                                
-		StartUDPServer(&ClientSocket, argv[1], argv[2], Log);
+		SOCKET ClientSocket, Listener;                                
+		StartUDPServer(&ClientSocket, &Listener, argv[1], argv[2], Log);
 
 		//
 		int Number = 0;
@@ -288,22 +288,22 @@ void RunUDPServer(char** argv)
 		while(true)
 		{
 			FILE *file;
-			char bufer[1000];
+			char bufer[65536];
 			int Response = 0;
 
 			//
 			// Заполняем множество сокетов
 			FD_ZERO(&ReadSet);
-			FD_SET(ClientSocket, &ReadSet);
+			FD_SET(Listener, &ReadSet);
 			for(map<int,string>::iterator it = clients.begin(); it != clients.end(); it++)
 				FD_SET((*it).first , &ReadSet);
 			timeval timeout;
 			timeout.tv_sec = 15;
 			timeout.tv_usec = 0;
-			int mx = ClientSocket;
+			int mx = Listener;
 			for(map<int,string>::iterator it = clients.begin(); it != clients.end(); it++)
 			{
-				if ((*it).first > ClientSocket)
+				if ((*it).first > Listener)
 					mx = (*it).first;
 			};
 			// Ждём события в одном из сокетов
@@ -312,9 +312,9 @@ void RunUDPServer(char** argv)
 				printf("Select Error\n");
 				return;
 			}
-			int x = FD_ISSET(ClientSocket, &ReadSet);
 			if (FD_ISSET(Listener, &ReadSet))
 			{
+				ClientSocket = Listener;
 				ULONG ulBlock = 1;
 				if (ioctlsocket(ClientSocket, FIONBIO, &ulBlock) == SOCKET_ERROR)
 				{
@@ -329,19 +329,19 @@ void RunUDPServer(char** argv)
 				string filename;//(ConvertIntToString(Number));
 				filename.append(FileName);
 				clients.insert( valType(ClientSocket,filename));
-				Listener = 13;
 			}
 			for(map<int,string>::iterator it = clients.begin(); it != clients.end(); it++)
 			{
 				if(FD_ISSET((*it).first, &ReadSet))
 				{
+					ClientSocket = Listener;    
 					FILE *F;
 					if (!(F = fopen((*it).second.c_str() ,"ab")))
 					{
 						perror("Create File");
 						break;
 					};
-					Response = recvfrom(ClientSocket, bufer, 1000, 0, (struct sockaddr *)&Client, &Client_Length);
+					Response = recvfrom(ClientSocket, bufer, 65536, 0, (struct sockaddr *)&Client, &Client_Length);
 					if(Response <= 0)
 					{
 						// Соединение разорвано, удаляем сокет из множества
@@ -418,14 +418,13 @@ int StartTCPServer(SOCKET *ClientSocket, SOCKET *Listener, char* IpAddress, char
 	return Result;
 }
 
-int StartUDPServer(SOCKET *ClientSocket, char* IpAddress, char* Port, char* Log)
+int StartUDPServer(SOCKET *ClientSocket, SOCKET *Listener, char* IpAddress, char* Port, char* Log)
 {
-	SOCKET Listener;
 	sockaddr_in ListenerName;        
-	int Result = SocketHelper::InitializeSocket(&Listener, &ListenerName, SOCK_DGRAM, inet_addr(IpAddress), htons(atoi(Port)), Log);        
+	int Result = SocketHelper::InitializeSocket(Listener, &ListenerName, SOCK_DGRAM, inet_addr(IpAddress), htons(atoi(Port)), Log);        
 	if(!Result)
 	{
-		int Answer = bind(Listener, (const sockaddr*)&ListenerName, sizeof(ListenerName));        
+		int Answer = bind(*Listener, (const sockaddr*)&ListenerName, sizeof(ListenerName));        
 		if (Answer != 0)
 		{
 			strcpy(Log, "Failed to bind socket\n");
@@ -434,13 +433,13 @@ int StartUDPServer(SOCKET *ClientSocket, char* IpAddress, char* Port, char* Log)
 
 		//
 		ULONG ulBlock = 1;
-		if (ioctlsocket(Listener, FIONBIO, &ulBlock) == SOCKET_ERROR)
+		if (ioctlsocket(*Listener, FIONBIO, &ulBlock) == SOCKET_ERROR)
 		{
 			strcpy(Log, "Failed ioctlsocket\n");
 			return 0;
 		}
 		//
-		*ClientSocket = Listener;                
+		//*ClientSocket = Listener;                
 	}                        
 	return Result;
 }
