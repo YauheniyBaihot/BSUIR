@@ -208,11 +208,11 @@ void RunUDPServer(char** argv)
 		while(true)
 		{
 			FILE *file;
-			char bufer[100000];
+			char bufer[10000];
 			int Response = 0;
 
 			file = fopen(FileName, "ab");
-			Response = recvfrom(ClientSocket, bufer, 100000, 0, (struct sockaddr *)&Client, &Client_Length);
+			Response = recvfrom(ClientSocket, bufer, 10000, 0, (struct sockaddr *)&Client, &Client_Length);
 			if (Response <= 0)
 			{
 				printf("Connection Closed\n");
