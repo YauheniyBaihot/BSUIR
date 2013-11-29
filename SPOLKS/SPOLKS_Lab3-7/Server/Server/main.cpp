@@ -298,6 +298,134 @@ void RunUDPServer(char** argv)
 	}
 }
 
+//void RunUDPServer(char** argv)
+//{
+//	while(true)
+//	{                
+//		struct sockaddr_in Client;
+//		int Client_Length = (int)sizeof(struct sockaddr_in);
+//		char* Log = new char[100];
+//		SOCKET ClientSocket, Listener = 116;                                
+//		StartUDPServer(&ClientSocket, argv[1], argv[2], Log);
+//
+//		//
+//		int Number = 0;
+//		FD_SET ReadSet;
+//		int ReadySock;
+//		map <int,string> clients;
+//		clients.clear();
+//		typedef map<int,string>::value_type valType;
+//		//
+//
+//		/*char FileName[106];
+//		strcpy(FileName, GetFileNameByUDP(ClientSocket, &Client, &Client_Length));
+//		int BytesCount = 0, FileLength = 0;
+//		GetFileLengthAndStartPositionByUDP(ClientSocket, &FileLength, &BytesCount, FileName, &Client, &Client_Length);*/
+//		while(true)
+//		{
+//			FILE *file;
+//			char bufer[10000];
+//			int Response = 0;
+//
+//			//
+//			// Заполняем множество сокетов
+//			FD_ZERO(&ReadSet);
+//			FD_SET(ClientSocket, &ReadSet);
+//			for(map<int,string>::iterator it = clients.begin(); it != clients.end(); it++)
+//				FD_SET((*it).first , &ReadSet);
+//			timeval timeout;
+//			timeout.tv_sec = 15;
+//			timeout.tv_usec = 0;
+//			int mx = ClientSocket;
+//			for(map<int,string>::iterator it = clients.begin(); it != clients.end(); it++)
+//			{
+//				if ((*it).first > ClientSocket)
+//					mx = (*it).first;
+//			};
+//			// Ждём события в одном из сокетов
+//			if ((ReadySock = select(mx+1, &ReadSet, NULL, NULL, &timeout)) == SOCKET_ERROR)
+//			{
+//				printf("Select Error\n");
+//				return;
+//			}
+//			if (FD_ISSET(Listener, &ReadSet))
+//			{
+//				
+//				if (ClientSocket == INVALID_SOCKET)
+//				{
+//					return;
+//				}
+//				ULONG ulBlock = 1;
+//				if (ioctlsocket(ClientSocket, FIONBIO, &ulBlock) == SOCKET_ERROR)
+//				{
+//					return;
+//				}
+//				Sleep(1);
+//				char FileName[106];
+//				strcpy(FileName, GetFileNameByUDP(ClientSocket, &Client, &Client_Length));
+//				int BytesCount = 0, FileLength = 0;
+//				GetFileLengthAndStartPositionByUDP(ClientSocket, &FileLength, &BytesCount, FileName, &Client, &Client_Length);
+//				Number++;   // увеличиваем счетчик подключившихся клиентов
+//				string filename;//(ConvertIntToString(Number));
+//				filename.append(FileName);
+//				clients.insert( valType(ClientSocket,filename));
+//				Listener = 13;
+//			}
+//			for(map<int,string>::iterator it = clients.begin(); it != clients.end(); it++)
+//			{
+//				if(FD_ISSET((*it).first, &ReadSet))
+//				{
+//					FILE *F;
+//					if (!(F = fopen((*it).second.c_str() ,"ab")))
+//					{
+//						perror("Create File");
+//						break;
+//					};
+//
+//					Response = recvfrom((*it).first, bufer, 10000, 0, (struct sockaddr *)&Client, &Client_Length);
+//					if(Response <= 0)
+//					{
+//						// Соединение разорвано, удаляем сокет из множества
+//						closesocket((*it).first);
+//						clients.erase((*it).first);						
+//						if(clients.size() == 0)
+//						{
+//							break;
+//						}
+//						else
+//						{
+//							it = clients.begin();
+//							continue;
+//						}
+//					}
+//					//записали данные в файл
+//					fwrite(bufer, sizeof(char), Response, F);
+//					// Отправляем данные обратно клиенту
+//					sendto((*it).first, "ready", 6 * sizeof(char), 0, (struct sockaddr *)&Client, Client_Length);
+//
+//					fclose(F);
+//				}
+//				//printf("\nReceiving the part of file %d is complete.\n",Number);
+//			}    
+//			//
+//
+//			/*file = fopen(FileName, "ab");
+//			Response = recvfrom(ClientSocket, bufer, 10000, 0, (struct sockaddr *)&Client, &Client_Length);
+//			if (Response <= 0)
+//			{
+//				printf("Connection Closed\n");
+//				SocketHelper::CloseSocket(ClientSocket);
+//				fclose(file);
+//				break;
+//			}
+//			fwrite(bufer, 1, Response, file);
+//			BytesCount += Response;
+//			sendto(ClientSocket, "ready", 6 * sizeof(char), 0, (struct sockaddr *)&Client, Client_Length);
+//			fclose (file);*/
+//		}
+//	}
+//}
+
 int StartTCPServer(SOCKET *ClientSocket, SOCKET *Listener, char* IpAddress, char* Port, char* Log)
 {
 	sockaddr_in ListenerName;
