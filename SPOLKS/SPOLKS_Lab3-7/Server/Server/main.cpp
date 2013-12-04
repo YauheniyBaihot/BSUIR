@@ -262,41 +262,41 @@ void RunTCPServer(char** argv)
 	}
 }
 
-void RunUDPServer(char** argv)
-{
-	while(true)
-	{                
-		struct sockaddr_in Client;
-		int Client_Length = (int)sizeof(struct sockaddr_in);
-		char* Log = new char[100];
-		SOCKET ClientSocket;                                
-		StartUDPServer(&ClientSocket, argv[1], argv[2], Log);
-		char FileName[106];
-		strcpy(FileName, GetFileNameByUDP(ClientSocket, &Client, &Client_Length));
-		int BytesCount = 0, FileLength = 0;
-		GetFileLengthAndStartPositionByUDP(ClientSocket, &FileLength, &BytesCount, FileName, &Client, &Client_Length);
-		while(true)
-		{
-			FILE *file;
-			char bufer[10000];
-			int Response = 0;
-
-			file = fopen(FileName, "ab");
-			Response = recvfrom(ClientSocket, bufer, 10000, 0, (struct sockaddr *)&Client, &Client_Length);
-			if (Response <= 0)
-			{
-				printf("Connection Closed\n");
-				SocketHelper::CloseSocket(ClientSocket);
-				fclose(file);
-				break;
-			}
-			fwrite(bufer, 1, Response, file);
-			BytesCount += Response;
-			sendto(ClientSocket, "ready", 6 * sizeof(char), 0, (struct sockaddr *)&Client, Client_Length);
-			fclose (file);
-		}
-	}
-}
+//void RunUDPServer(char** argv)
+//{
+//	while(true)
+//	{                
+//		struct sockaddr_in Client;
+//		int Client_Length = (int)sizeof(struct sockaddr_in);
+//		char* Log = new char[100];
+//		SOCKET ClientSocket;                                
+//		StartUDPServer(&ClientSocket, argv[1], argv[2], Log);
+//		char FileName[106];
+//		strcpy(FileName, GetFileNameByUDP(ClientSocket, &Client, &Client_Length));
+//		int BytesCount = 0, FileLength = 0;
+//		GetFileLengthAndStartPositionByUDP(ClientSocket, &FileLength, &BytesCount, FileName, &Client, &Client_Length);
+//		while(true)
+//		{
+//			FILE *file;
+//			char bufer[10000];
+//			int Response = 0;
+//
+//			file = fopen(FileName, "ab");
+//			Response = recvfrom(ClientSocket, bufer, 10000, 0, (struct sockaddr *)&Client, &Client_Length);
+//			if (Response <= 0)
+//			{
+//				printf("Connection Closed\n");
+//				SocketHelper::CloseSocket(ClientSocket);
+//				fclose(file);
+//				break;
+//			}
+//			fwrite(bufer, 1, Response, file);
+//			BytesCount += Response;
+//			sendto(ClientSocket, "ready", 6 * sizeof(char), 0, (struct sockaddr *)&Client, Client_Length);
+//			fclose (file);
+//		}
+//	}
+//}
 
 //void RunUDPServer(char** argv)
 //{
@@ -305,13 +305,12 @@ void RunUDPServer(char** argv)
 //		struct sockaddr_in Client;
 //		int Client_Length = (int)sizeof(struct sockaddr_in);
 //		char* Log = new char[100];
-//		SOCKET ClientSocket, Listener = 116;                                
+//		SOCKET ClientSocket;                                
 //		StartUDPServer(&ClientSocket, argv[1], argv[2], Log);
 //
 //		//
 //		int Number = 0;
-//		FD_SET ReadSet;
-//		int ReadySock;
+//		FD_SET ReadSet, fdWorkingRead;
 //		map <int,string> clients;
 //		clients.clear();
 //		typedef map<int,string>::value_type valType;
@@ -330,7 +329,11 @@ void RunUDPServer(char** argv)
 //			//
 //			// Заполняем множество сокетов
 //			FD_ZERO(&ReadSet);
+//			FD_ZERO(&fdWorkingRead);
 //			FD_SET(ClientSocket, &ReadSet);
+//			CopyMemory(&fdWorkingRead, &ReadSet, sizeof(FD_SET));
+//			
+//			// Ждём события в одном из сокетов
 //			for(map<int,string>::iterator it = clients.begin(); it != clients.end(); it++)
 //				FD_SET((*it).first , &ReadSet);
 //			timeval timeout;
@@ -342,24 +345,28 @@ void RunUDPServer(char** argv)
 //				if ((*it).first > ClientSocket)
 //					mx = (*it).first;
 //			};
-//			// Ждём события в одном из сокетов
-//			if ((ReadySock = select(mx+1, &ReadSet, NULL, NULL, &timeout)) == SOCKET_ERROR)
+//			if ((select(mx+1, &fdWorkingRead, NULL, NULL, &timeout)) == SOCKET_ERROR)
 //			{
 //				printf("Select Error\n");
 //				return;
 //			}
-//			if (FD_ISSET(Listener, &ReadSet))
+//			if (FD_ISSET(ClientSocket, &fdWorkingRead))
 //			{
+//				for(map<int,string>::iterator it = clients.begin(); it != clients.end(); it++)
+//				{
+//					FD_SET((*it).first , &ReadSet);
+//				}				
+//				int mx = ClientSocket;
 //				
 //				if (ClientSocket == INVALID_SOCKET)
 //				{
 //					return;
 //				}
 //				ULONG ulBlock = 1;
-//				if (ioctlsocket(ClientSocket, FIONBIO, &ulBlock) == SOCKET_ERROR)
+//				/*if (ioctlsocket(ClientSocket, FIONBIO, &ulBlock) == SOCKET_ERROR)
 //				{
 //					return;
-//				}
+//				}*/
 //				Sleep(1);
 //				char FileName[106];
 //				strcpy(FileName, GetFileNameByUDP(ClientSocket, &Client, &Client_Length));
@@ -369,11 +376,11 @@ void RunUDPServer(char** argv)
 //				string filename;//(ConvertIntToString(Number));
 //				filename.append(FileName);
 //				clients.insert( valType(ClientSocket,filename));
-//				Listener = 13;
+//
 //			}
 //			for(map<int,string>::iterator it = clients.begin(); it != clients.end(); it++)
 //			{
-//				if(FD_ISSET((*it).first, &ReadSet))
+//				if(FD_ISSET((*it).first, &fdWorkingRead))
 //				{
 //					FILE *F;
 //					if (!(F = fopen((*it).second.c_str() ,"ab")))
@@ -387,6 +394,7 @@ void RunUDPServer(char** argv)
 //					{
 //						// Соединение разорвано, удаляем сокет из множества
 //						closesocket((*it).first);
+//						FD_CLR((*it).first,&ReadSet);
 //						clients.erase((*it).first);						
 //						if(clients.size() == 0)
 //						{
@@ -407,6 +415,7 @@ void RunUDPServer(char** argv)
 //				}
 //				//printf("\nReceiving the part of file %d is complete.\n",Number);
 //			}    
+//			FD_ZERO(&fdWorkingRead);
 //			//
 //
 //			/*file = fopen(FileName, "ab");
@@ -425,6 +434,141 @@ void RunUDPServer(char** argv)
 //		}
 //	}
 //}
+
+void RunUDPServer(char** argv)
+{
+        while(true)
+        {                
+				int Number = 0;
+                fd_set ReadSet, WorkingReadSet;
+                int ReadySock;
+                map <int,string> clients;
+                clients.clear();
+                typedef map<int,string>::value_type valType;
+
+                struct sockaddr_in Client;
+                int Client_Length = (int)sizeof(struct sockaddr_in);
+                char* Log = new char[100];
+                SOCKET ClientSocket;                                
+                StartUDPServer(&ClientSocket, argv[1], argv[2], Log);
+
+				timeval timeout;
+                timeout.tv_sec = 30000;
+                timeout.tv_usec = 0;
+				setsockopt(ClientSocket, SOL_SOCKET, SO_REUSEADDR, (char*)&timeout, sizeof(timeout));
+				FD_ZERO(&ReadSet);
+				FD_ZERO(&WorkingReadSet);
+                FD_SET(ClientSocket, &ReadSet);
+                //
+                
+                //
+
+                /*char FileName[106];
+                strcpy(FileName, GetFileNameByUDP(ClientSocket, &Client, &Client_Length));
+                int BytesCount = 0, FileLength = 0;
+                GetFileLengthAndStartPositionByUDP(ClientSocket, &FileLength, &BytesCount, FileName, &Client, &Client_Length);*/
+                while(true)
+                {
+                        FILE *file;
+                        char bufer[10000];
+                        int Response = 0;
+
+                        //
+                       CopyMemory(&WorkingReadSet, &ReadSet, sizeof(fd_set));
+                        
+                        for(map<int,string>::iterator it = clients.begin(); it != clients.end(); it++)
+                                FD_SET((*it).first , &ReadSet);
+                        
+                        int mx = ClientSocket;
+                        for(map<int,string>::iterator it = clients.begin(); it != clients.end(); it++)
+                        {
+                                if ((*it).first > ClientSocket)
+                                        mx = (*it).first;
+                        };
+                        
+                        if ((ReadySock = select(mx+1, &WorkingReadSet, NULL, NULL, &timeout)) == SOCKET_ERROR)
+                        {
+                                printf("Select Error\n");
+                                return;
+                        }
+                        if (FD_ISSET(ClientSocket, &WorkingReadSet))
+                        {
+                                
+                                if (ClientSocket == INVALID_SOCKET)
+                                {
+                                        return;
+                                }
+                                ULONG ulBlock = 1;
+                                if (ioctlsocket(ClientSocket, FIONBIO, &ulBlock) == SOCKET_ERROR)
+                                {
+                                        return;
+                                }
+                                Sleep(1);
+                                char FileName[106];
+                                strcpy(FileName, GetFileNameByUDP(ClientSocket, &Client, &Client_Length));
+                                int BytesCount = 0, FileLength = 0;
+                                GetFileLengthAndStartPositionByUDP(ClientSocket, &FileLength, &BytesCount, FileName, &Client, &Client_Length);
+                                Number++;   
+                                string filename;//(ConvertIntToString(Number));
+                                filename.append(FileName);
+                                clients.insert( valType(ClientSocket,filename));
+                        }
+                        for(map<int,string>::iterator it = clients.begin(); it != clients.end(); it++)
+                        {
+                                if(FD_ISSET((*it).first, &WorkingReadSet))
+                                {
+                                        FILE *F;
+                                        if (!(F = fopen((*it).second.c_str() ,"ab")))
+                                        {
+                                                perror("Create File");
+                                                break;
+                                        };
+
+                                        Response = recvfrom((*it).first, bufer, 10000, 0, (struct sockaddr *)&Client, &Client_Length);
+                                        if(Response <= 0)
+                                        {
+                                               
+                                                closesocket((*it).first);
+												FD_CLR((*it).first,&ReadSet);
+                                                clients.erase((*it).first);                                                
+                                                if(clients.size() == 0)
+                                                {
+                                                        break;
+                                                }
+                                                else
+                                                {
+                                                        it = clients.begin();
+                                                        continue;
+                                                }
+                                        }
+                                       
+                                        fwrite(bufer, sizeof(char), Response, F);
+                                        
+                                        sendto((*it).first, "ready", 6 * sizeof(char), 0, (struct sockaddr *)&Client, Client_Length);
+
+                                        fclose(F);
+                                }
+								FD_ZERO(&WorkingReadSet);
+                                //printf("\nReceiving the part of file %d is complete.\n",Number);
+                        }    
+                        //
+
+                        /*file = fopen(FileName, "ab");
+                        Response = recvfrom(ClientSocket, bufer, 10000, 0, (struct sockaddr *)&Client, &Client_Length);
+                        if (Response <= 0)
+                        {
+                                printf("Connection Closed\n");
+                                SocketHelper::CloseSocket(ClientSocket);
+                                fclose(file);
+                                break;
+                        }
+                        fwrite(bufer, 1, Response, file);
+                        BytesCount += Response;
+                        sendto(ClientSocket, "ready", 6 * sizeof(char), 0, (struct sockaddr *)&Client, Client_Length);
+                        fclose (file);*/
+                }
+        }
+}
 
 int StartTCPServer(SOCKET *ClientSocket, SOCKET *Listener, char* IpAddress, char* Port, char* Log)
 {
