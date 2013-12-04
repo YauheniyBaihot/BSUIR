@@ -7,6 +7,7 @@
 #include <fstream>
 #include <string>
 #include <algorithm>
+//ky 9 norm
 using namespace std;
 
 void RunClient(char** argv, int SocketType);
